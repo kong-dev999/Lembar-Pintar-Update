@@ -1,0 +1,568 @@
+// 1. GENERATOR & DATASOURCE -------------------------------------------------
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 2. USER & AUTH -----------------------------------------------------------
+model User {
+  id                String            @id @default(cuid())
+  userCode          String            @unique @default(cuid())
+  name              String?
+  email             String            @unique
+  password          String?
+  role              GlobalRole        @default(USER)
+  emailVerified     DateTime?
+  verificationToken String?
+  image             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  accounts          Account[]
+  sessions          Session[]
+
+  createdWorkspaces Workspace[]
+  memberships       Member[]          @relation("membership")
+  invitedMembers    Member[]          @relation("inviter")
+
+  uploadedAssets    Asset[]
+
+  ownDesigns        Design[]
+  collaborations    DesignCollaborator[]
+  customerPayment   CustomerPayment?
+
+  domains           Domain[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 3. WORKSPACE & MEMBER ----------------------------------------------------
+model Workspace {
+  id            String          @id @default(cuid())
+  workspaceCode String          @unique @default(cuid())
+  inviteCode    String          @unique @default(cuid())
+  creatorId     String
+  name          String
+  slug          String          @unique
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  creator       User            @relation(fields: [creatorId], references: [id])
+  members       Member[]
+  domains       Domain[]
+  designs       Design[]
+  folders       Folder[]
+  assets        Asset[]
+}
+
+model Member {
+  id          String           @id @default(cuid())
+  workspaceId String
+  userId      String?          // Tambahan: untuk user yang sudah join
+  email       String
+  inviter     String
+  invitedAt   DateTime         @default(now())
+  joinedAt    DateTime?
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+  status      InvitationStatus @default(PENDING)
+  teamRole    TeamRole         @default(MEMBER)
+
+  member      User?            @relation("membership", fields: [userId], references: [id])
+  invitedBy   User?            @relation("inviter", fields: [inviter], references: [email])
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  @@unique([workspaceId, email])
+}
+
+// 4. CUSTOM DOMAIN ---------------------------------------------------------
+model Domain {
+  id          String    @id @default(cuid())
+  workspaceId String
+  addedById   String
+  name        String
+  subdomain   String?
+  verified    Boolean   @default(false)
+  value       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  addedBy   User      @relation(fields: [addedById], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+// 5. BILLING ---------------------------------------------------------------
+model CustomerPayment {
+  id               String           @id @default(cuid())
+  paymentId        String           @unique
+  customerId       String           @unique
+  email            String?
+  subscriptionType SubscriptionType @default(FREE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  customer User @relation(fields: [customerId], references: [id])
+}
+
+// 6. DESIGN ----------------------------------------------------------------
+model Design {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  polotnoJson  Json
+  thumbnailUrl String?
+  workspaceId  String
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id])
+  ownerId      String
+  owner        User         @relation(fields: [ownerId], references: [id])
+  folderId     String?
+  folder       Folder?      @relation(fields: [folderId], references: [id])
+  status       DesignStatus @default(DRAFT)
+  visibility   Visibility   @default(PRIVATE)
+
+  versions      DesignVersion[]
+  collaborators DesignCollaborator[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+}
+
+model DesignVersion {
+  id          String   @id @default(cuid())
+  designId    String
+  design      Design   @relation(fields: [designId], references: [id])
+  polotnoJson Json
+  version     Int
+  createdAt   DateTime @default(now())
+  @@unique([designId, version])
+}
+
+model DesignCollaborator {
+  id        String           @id @default(cuid())
+  designId  String
+  userId    String
+  role      CollaboratorRole @default(VIEWER)
+  createdAt DateTime         @default(now())
+  design    Design           @relation(fields: [designId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
+  @@unique([designId, userId])
+}
+
+// 7. FOLDER ---------------------------------------------------------------
+model Folder {
+  id          String    @id @default(cuid())
+  name        String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  parentId    String?
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    Folder[]  @relation("FolderHierarchy")
+  designs     Design[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+// 8. ASSET MASTER (polymorphic) ------------------------------------------
+model Asset {
+  id            String    @id @default(cuid())
+  type          AssetType
+  title         String
+  slug          String    @unique
+  description   String?
+  status        AssetStatus @default(PUBLISHED)
+  visibility    Visibility  @default(PUBLIC)
+  workspaceId   String
+  workspace     Workspace   @relation(fields: [workspaceId], references: [id])
+  uploadedById  String
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+  assetableId   String      // ID referensi ke model detail
+  assetableType String      // Template | Element | Photo | Video | Font
+  isSystemAsset Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  // Untuk polymorphic relation, kita tidak buat FK constraint
+  // Relasi akan dihandle di application level
+}
+
+// 9. DETAIL TIAP TIPE ------------------------------------------------------
+model Template {
+  id           String       @id @default(cuid())
+  width        Int
+  height       Int
+  unit         Unit         @default(PX)
+  pages        Json         // Polotno Page[]
+  thumbnailUrl String?      // Preview thumbnail URL
+  colorPalette Json?
+  fontPalette  Json?
+  premiumLevel PremiumLevel @default(FREE)
+  
+  // Relations - EXISTING (tetap ada untuk backward compatibility)
+  categories   TemplateCategory[]
+  tags         TemplateTag[]
+  
+  // Relations - NEW (untuk educational hierarchy)
+  educationLevels EducationLevel[] @relation("TemplateEducationLevel")
+  grades          Grade[]          @relation("TemplateGrade") 
+  subjects        Subject[]        @relation("TemplateSubject")
+  
+  // Preview files
+  previews        TemplatePreview[]
+}
+
+model Element {
+  id            String        @id @default(cuid())
+  format        ElementFormat
+  colorable     Boolean       @default(false)
+  animated      Boolean       @default(false)
+  loop          Boolean?
+  sourceFileId  String
+  sourceFile    File          @relation("source_file", fields: [sourceFileId], references: [id])
+  previewFileId String
+  previewFile   File          @relation("preview_file", fields: [previewFileId], references: [id])
+  premiumLevel  PremiumLevel  @default(FREE)
+  
+  // Relations
+  categories    ElementCategory[]
+  tags          ElementTag[]
+}
+
+model Photo {
+  id             String       @id @default(cuid())
+  width          Int
+  height         Int
+  ratio          Float
+  color          String?
+  originalFileId String
+  originalFile   File         @relation("original_photo", fields: [originalFileId], references: [id])
+  licenseId      String
+  license        License      @relation(fields: [licenseId], references: [id])
+  premiumLevel   PremiumLevel @default(FREE)
+  
+  // Relations
+  previews       PhotoPreview[]
+  categories     PhotoCategory[]
+  tags           PhotoTag[]
+}
+
+model Video {
+  id             String       @id @default(cuid())
+  width          Int
+  height         Int
+  ratio          Float
+  duration       Int
+  fps            Int
+  originalFileId String
+  originalFile   File         @relation("original_video", fields: [originalFileId], references: [id])
+  licenseId      String
+  license        License      @relation(fields: [licenseId], references: [id])
+  premiumLevel   PremiumLevel @default(FREE)
+  
+  // Relations
+  previews       VideoPreview[]
+  categories     VideoCategory[]
+  tags           VideoTag[]
+}
+
+model Font {
+  id           String       @id @default(cuid())
+  family       String
+  subsets      String[]
+  weights      String[]
+  styles       FontStyle[]
+  previewText  String       @default("Almost before we knew it, we had left the ground.")
+  premiumLevel PremiumLevel @default(FREE)
+  
+  // Relations
+  files        FontFile[]
+}
+
+model FontFile {
+  id        String    @id @default(cuid())
+  fontId    String
+  font      Font      @relation(fields: [fontId], references: [id])
+  weight    String
+  style     FontStyle @default(normal)
+  subset    String
+  fileId    String
+  file      File      @relation(fields: [fileId], references: [id])
+}
+
+// 10. FILE CDN & PREVIEW FILES ---------------------------------------------
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  url       String   @unique // signed CDN
+  size      Int
+  mime      String
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  // Element files
+  elements_source  Element[] @relation("source_file")
+  elements_preview Element[] @relation("preview_file")
+  
+  // Photo files
+  photos_original  Photo[]   @relation("original_photo")
+  photo_previews   PhotoPreview[]
+  
+  // Video files
+  videos_original  Video[]   @relation("original_video")
+  video_previews   VideoPreview[]
+  
+  // Font files
+  font_files       FontFile[]
+  
+  // Template previews
+  template_previews TemplatePreview[]
+}
+
+model PhotoPreview {
+  id      String @id @default(cuid())
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id])
+  fileId  String
+  file    File   @relation(fields: [fileId], references: [id])
+  size    String // "thumbnail", "small", "medium", "large"
+}
+
+model VideoPreview {
+  id      String @id @default(cuid())
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id])
+  fileId  String
+  file    File   @relation(fields: [fileId], references: [id])
+  type    String // "poster", "thumbnail"
+}
+
+model TemplatePreview {
+  id         String   @id @default(cuid())
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id])
+  fileId     String
+  file       File     @relation(fields: [fileId], references: [id])
+  size       String   // "thumbnail", "small", "medium", "large"
+}
+
+// 11. LICENSE --------------------------------------------------------------
+model License {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  description  String?
+  premiumLevel PremiumLevel @default(FREE)
+  allowPrint   Boolean
+  allowVideo   Boolean
+  allowResale  Boolean
+  
+  photos       Photo[]
+  videos       Video[]
+}
+
+// 12. CATEGORIES & TAGS ----------------------------------------------------
+model TemplateCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String?    @unique
+  templates Template[]
+}
+
+model TemplateTag {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  templates Template[]
+}
+
+// === NEW: Educational Hierarchy Models ===
+model EducationLevel {
+  id        String @id @default(cuid())
+  name      String @unique // "TK", "SD", "SMP", "SMA"
+  slug      String @unique
+  order     Int            // untuk sorting
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  grades    Grade[]
+  templates Template[] @relation("TemplateEducationLevel")
+}
+
+model Grade {
+  id               String @id @default(cuid())
+  name             String // "A", "B", "1", "2", "10", "11", "12"
+  displayName      String // "TK A", "Kelas 1", "Kelas 10"
+  educationLevelId String
+  order            Int    // untuk sorting dalam level
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  educationLevel   EducationLevel @relation(fields: [educationLevelId], references: [id])
+  templates        Template[] @relation("TemplateGrade")
+  
+  @@unique([educationLevelId, name])
+}
+
+model Subject {
+  id               String @id @default(cuid())
+  name             String @unique // "Matematika", "IPA", "Fisika", etc.
+  slug             String @unique  
+  applicableLevels String[]       // ["SD", "SMP", "SMA"] - untuk filtering
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  templates        Template[] @relation("TemplateSubject")
+}
+
+model ElementCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String?   @unique
+  elements Element[]
+}
+
+model ElementTag {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  elements Element[]
+}
+
+model PhotoCategory {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String? @unique
+  photos Photo[]
+}
+
+model PhotoTag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  photos Photo[]
+}
+
+model VideoCategory {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String? @unique
+  videos Video[]
+}
+
+model VideoTag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  videos Video[]
+}
+
+// 13. ENUMS ---------------------------------------------------------------
+enum PremiumLevel {
+  FREE
+  PRO
+  PREMIUM
+}
+enum GlobalRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum TeamRole {
+  MEMBER
+  OWNER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum SubscriptionType {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum AssetType {
+  TEMPLATE
+  ELEMENT
+  PHOTO
+  VIDEO
+  FONT
+}
+
+enum AssetStatus {
+  PUBLISHED
+  PENDING
+  ARCHIVED
+}
+
+enum Visibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum ElementFormat {
+  SVG
+  PNG
+  JPEG
+  GIF
+  LOTTIE
+  MP4
+  WEBM
+}
+
+enum DesignStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CollaboratorRole {
+  VIEWER
+  EDITOR
+  OWNER
+}
+
+enum FontStyle {
+  normal
+  italic
+}
+
+enum Unit {
+  PX
+  MM
+  CM
+  IN
+}

@@ -1,7 +1,7 @@
-"use client";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import Link from "next/link";
-import { useEffect } from "react";
+'use client';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import Link from 'next/link';
+import { useEffect } from 'react';
 
 const CallToAction = () => {
   // Mouse position tracking
@@ -39,18 +39,22 @@ const CallToAction = () => {
       mouseY.set(mouseYPos);
     };
 
-    const section = document.getElementById("cta-glass-section");
+    const section = document.getElementById('cta-glass-section');
     if (section) {
-      section.addEventListener("mousemove", handleMouseMove);
-      return () => section.removeEventListener("mousemove", handleMouseMove);
+      section.addEventListener('mousemove', handleMouseMove);
+      return () => section.removeEventListener('mousemove', handleMouseMove);
     }
   }, [mouseX, mouseY]);
 
   return (
     <section
       id="cta-glass-section"
-      className="relative flex items-center justify-center w-full min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 py-20 sm:py-28 md:py-32 overflow-hidden"
-      style={{ perspective: "1000px" }}
+      className="relative flex items-center justify-center w-full min-h-screen py-20 sm:py-28 md:py-32 overflow-hidden"
+      style={{
+        perspective: '1000px',
+        background:
+          'linear-gradient(180deg, #4d08ccff 5%, #000000ff 25%, #000000ff 100%)',
+      }}
     >
       {/* Animated background glow effects with mouse parallax */}
       <motion.div
@@ -64,12 +68,12 @@ const CallToAction = () => {
             scale: [1, 1.2, 1],
             opacity: [0.4, 0.7, 0.4],
             x: [0, 50, 0],
-            y: [0, -30, 0],
+            y: [0, -80, -40],
           }}
           transition={{
-            duration: 8,
+            duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
@@ -79,12 +83,12 @@ const CallToAction = () => {
             scale: [1.2, 1, 1.2],
             opacity: [0.5, 0.8, 0.5],
             x: [0, -40, 0],
-            y: [0, 40, 0],
+            y: [0, -60, -20],
           }}
           transition={{
-            duration: 10,
+            duration: 12,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
@@ -94,11 +98,12 @@ const CallToAction = () => {
             scale: [0.8, 1.3, 0.8],
             opacity: [0.3, 0.6, 0.3],
             rotate: [0, 180, 360],
+            y: [0, -50, 0],
           }}
           transition={{
-            duration: 12,
+            duration: 14,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
@@ -106,28 +111,28 @@ const CallToAction = () => {
         <motion.div
           className="absolute top-40 right-1/3 h-40 w-40 rounded-full bg-blue-300/40 blur-2xl"
           animate={{
-            y: [-20, 20, -20],
+            y: [-30, -10, -30],
             x: [-15, 15, -15],
-            scale: [0.8, 1.1, 0.8],
+            scale: [0.9, 1.15, 0.9],
           }}
           transition={{
-            duration: 6,
+            duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
         <motion.div
           className="absolute bottom-40 left-1/3 h-32 w-32 rounded-full bg-blue-100/30 blur-xl"
           animate={{
-            y: [15, -15, 15],
+            y: [20, -30, 20],
             x: [10, -10, 10],
-            opacity: [0.3, 0.5, 0.3],
+            opacity: [0.3, 0.6, 0.3],
           }}
           transition={{
-            duration: 5,
+            duration: 7,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
       </motion.div>
@@ -136,7 +141,7 @@ const CallToAction = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 50 }}
         whileInView={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+        transition={{ duration: 0.8, type: 'spring', stiffness: 100 }}
         className="relative z-10 mx-auto max-w-5xl px-6"
       >
         {/* Main glassmorphism card with 3D transform */}
@@ -147,14 +152,20 @@ const CallToAction = () => {
             y: glassY,
             rotateX,
             rotateY,
-            transformStyle: "preserve-3d"
+            transformStyle: 'preserve-3d',
           }}
         >
           {/* Inner glow effect with depth */}
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/5 via-transparent to-transparent" style={{ transform: "translateZ(10px)" }} />
+          <div
+            className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/5 via-transparent to-transparent"
+            style={{ transform: 'translateZ(10px)' }}
+          />
 
           {/* Content with layered 3D depth */}
-          <div className="relative z-10 text-center text-white" style={{ transformStyle: "preserve-3d" }}>
+          <div
+            className="relative z-10 text-center text-white"
+            style={{ transformStyle: 'preserve-3d' }}
+          >
             {/* Heading with 3D depth */}
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -162,16 +173,16 @@ const CallToAction = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-3xl font-extrabold sm:text-5xl md:text-6xl leading-tight mb-6"
               style={{
-                transform: "translateZ(20px)",
-                textShadow: "0 5px 15px rgba(0,0,0,0.3)"
+                transform: 'translateZ(20px)',
+                textShadow: '0 5px 15px rgba(0,0,0,0.3)',
               }}
             >
-              Temukan cara baru untuk{" "}
+              Temukan cara baru untuk{' '}
               <motion.span
-                className="bg-gradient-to-r from-blue-200 via-blue-100 to-white bg-clip-text text-transparent"
+                className="text-white"
                 whileHover={{ scale: 1.02, rotateY: 2 }}
-                transition={{ type: "spring", stiffness: 400 }}
-                style={{ transform: "translateZ(5px)" }}
+                transition={{ type: 'spring', stiffness: 400 }}
+                style={{ transform: 'translateZ(5px)' }}
               >
                 Mengajar & Berkreasi
               </motion.span>
@@ -183,10 +194,10 @@ const CallToAction = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-lg sm:text-xl text-blue-50 mb-10 max-w-3xl mx-auto leading-relaxed"
-              style={{ transform: "translateZ(15px)" }}
+              style={{ transform: 'translateZ(15px)' }}
             >
-              Mulai gratis hari ini, dan rasakan kemudahan membuat materi interaktif
-              hanya dalam hitungan menit.
+              Mulai gratis hari ini, dan rasakan kemudahan membuat materi
+              interaktif hanya dalam hitungan menit.
             </motion.p>
 
             {/* 3D Interactive Buttons */}
@@ -195,7 +206,7 @@ const CallToAction = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
               className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6"
-              style={{ transform: "translateZ(25px)" }}
+              style={{ transform: 'translateZ(25px)' }}
             >
               {/* Primary button with 3D hover */}
               <motion.div
@@ -204,17 +215,17 @@ const CallToAction = () => {
                   y: -8,
                   rotateX: -5,
                   rotateY: 5,
-                  z: 20
+                  z: 20,
                 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400 }}
-                style={{ transformStyle: "preserve-3d" }}
+                transition={{ type: 'spring', stiffness: 400 }}
+                style={{ transformStyle: 'preserve-3d' }}
               >
                 <Link
-                  href="/signup"
-                  className="group relative inline-block"
+                  href="/auth/login"
+                  className="group relative inline-block no-underline"
                 >
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 to-blue-500 blur opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#1559f2] to-[#1559f2] blur opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative backdrop-blur-sm bg-white/20 border border-white/30 rounded-xl px-8 py-4 text-base font-semibold text-white hover:bg-white/25 transition-all duration-300 overflow-hidden">
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     {/* Button shine effect */}
@@ -231,15 +242,15 @@ const CallToAction = () => {
                   y: -8,
                   rotateX: -5,
                   rotateY: -5,
-                  z: 20
+                  z: 20,
                 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400 }}
-                style={{ transformStyle: "preserve-3d" }}
+                transition={{ type: 'spring', stiffness: 400 }}
+                style={{ transformStyle: 'preserve-3d' }}
               >
                 <Link
                   href="/demo"
-                  className="group relative inline-block"
+                  className="group relative inline-block no-underline"
                 >
                   <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl px-8 py-4 text-base font-semibold text-white hover:bg-white/15 hover:border-white/30 transition-all duration-300 overflow-hidden">
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -263,7 +274,7 @@ const CallToAction = () => {
           style={{
             x: floatingX,
             y: floatingY,
-            transform: "translateZ(40px)"
+            transform: 'translateZ(40px)',
           }}
           animate={{
             rotate: [0, 5, 0, -5, 0],
@@ -271,7 +282,7 @@ const CallToAction = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
@@ -280,7 +291,7 @@ const CallToAction = () => {
           style={{
             x: useTransform(floatingX, (v) => -v),
             y: useTransform(floatingY, (v) => -v * 0.8),
-            transform: "translateZ(35px)"
+            transform: 'translateZ(35px)',
           }}
           animate={{
             rotate: [0, -8, 0, 8, 0],
@@ -288,7 +299,7 @@ const CallToAction = () => {
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
 
@@ -297,7 +308,7 @@ const CallToAction = () => {
           style={{
             x: useTransform(floatingX, (v) => v * 0.5),
             y: useTransform(floatingY, (v) => v * 0.3),
-            transform: "translateZ(30px)"
+            transform: 'translateZ(30px)',
           }}
           animate={{
             scale: [1, 1.2, 1],
@@ -306,7 +317,7 @@ const CallToAction = () => {
           transition={{
             duration: 4,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
       </motion.div>

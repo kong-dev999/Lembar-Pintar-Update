@@ -1,0 +1,42 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Install dependencies
+        - npm ci
+
+    build:
+      commands:
+        # .env.production already in repo - no need to create it!
+
+        # Generate Prisma Client (DATABASE_URL from .env.production)
+        - npx prisma generate
+
+        # Run database migrations to create tables
+        - npx prisma migrate deploy
+
+        # Build Next.js application
+        - npm run build
+
+    postBuild:
+      commands:
+        # Optional: Run any post-build scripts
+        - echo "Build completed successfully"
+
+  artifacts:
+    # Output directory for Next.js
+    baseDirectory: .next
+    files:
+      - '**/*'
+
+  cache:
+    paths:
+      # Cache node_modules for faster builds
+      - node_modules/**/*
+
+      # Cache Next.js build cache
+      - .next/cache/**/*
+
+      # Cache Prisma engines
+      - node_modules/.prisma/**/*

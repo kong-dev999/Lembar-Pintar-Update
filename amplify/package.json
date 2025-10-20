@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Amplify Gen 2 backend configuration",
+  "scripts": {
+    "sandbox": "ampx sandbox",
+    "deploy": "ampx deploy"
+  }
+}

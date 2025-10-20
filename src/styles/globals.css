@@ -1,3 +1,274 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Roobert Mono TRIAL Light - add the actual font files to public/fonts/ as
+     RoobertMonoTrial-Light.woff2 / RoobertMonoTrial-Light.woff
+     Example filenames used below: /public/fonts/RoobertMonoTrial-Light.woff2
+*/
+@font-face {
+    font-family: 'Roobert Mono TRIAL';
+    src: url('/fonts/RoobertMonoTrial-Light.woff2') format('woff2'),
+             url('/fonts/RoobertMonoTrial-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Flecha Test S - Medium */
+@font-face {
+    font-family: 'Flecha Test S';
+    src: url('/fonts/FlechaTestS-Medium.woff2') format('woff2'),
+         url('/fonts/FlechaTestS-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+.flecha-medium {
+    font-family: 'Flecha Test S', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* Utility class to apply the Roobert Mono TRIAL font. Use this on the
+     navbar/header element so all its children inherit the font. */
+.roobert-mono {
+    font-family: 'Roobert Mono TRIAL', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    /* Navbar/font sizing: base for mobile, larger on md+ screens */
+    font-size: 15px; /* slightly larger than default */
+}
+
+/* Increase the font size a bit on medium and larger screens for better readability */
+@media (min-width: 768px) {
+    .roobert-mono {
+        font-size: 17px;
+    }
+}
+
+/* Remove underline when links/buttons inside the navbar are clicked/active.
+     Keep focus-visible ring for keyboard users for accessibility. */
+.roobert-mono a,
+.roobert-mono button {
+    text-decoration: none;
+}
+
+.roobert-mono a:active,
+.roobert-mono a:focus,
+.roobert-mono a:visited,
+.roobert-mono button:active,
+.roobert-mono button:focus {
+    text-decoration: none;
+    outline: none;
+}
+
+/* Use focus-visible to keep keyboard focus visible for accessibility */
+.roobert-mono a:focus-visible,
+.roobert-mono button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.18); /* subtle ring similar to Tailwind's focus-visible */
+    border-radius: 8px;
+}
+
+/* Optional utility if you want to apply broadly */
+.no-underline {
+    text-decoration: none !important;
+}
+
+@keyframes infinite-scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(calc(-100% / 3));
+    }
+}
+
+@keyframes infinite-scroll-right {
+    0% {
+        transform: translateX(calc(-100% / 3));
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.animate-infinite-scroll-left {
+    animation: infinite-scroll-left linear infinite;
+    will-change: transform;
+}
+
+.animate-infinite-scroll-right {
+    animation: infinite-scroll-right linear infinite;
+    will-change: transform;
+}
+
+/* Pastikan animasi selalu smooth */
+.animate-infinite-scroll-left,
+.animate-infinite-scroll-right {
+    animation-delay: 0s;
+    animation-fill-mode: none;
+}
+
+/* Optimasi performa */
+.marquee-optimized {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .animate-infinite-scroll-left,
+    .animate-infinite-scroll-right {
+        animation: none;
+        transform: translateX(0);
+    }
+}
+
+/* Hero background overlays: subtle rotating radial rays + purple vignette */
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes hero-rays-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.hero-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 10%, rgba(139,92,246,0.28) 0%, rgba(99,102,241,0.18) 20%, rgba(58,12,129,0.45) 50%, rgba(5,6,16,0.9) 100%);
+    mix-blend-mode: multiply;
+    opacity: 0.95;
+}
+
+/* Ensure hero content sits above overlays */
+.hero-content-z {
+    position: relative;
+    z-index: 10;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-rays { animation: none; }
+}
+
+/* Neon & headline spacing helpers */
+.neon-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.neon-strong {
+    /* stronger magenta/purple glow fallback */
+    text-shadow: 0 0 6px rgba(255,255,255,0.08), 0 0 18px rgba(124,58,237,0.45), 0 0 36px rgba(124,58,237,0.28);
+}
+.neon-glow {
+    /* cyan/blue glow fallback */
+    text-shadow: 0 0 6px rgba(255,255,255,0.08), 0 0 18px rgba(6,182,212,0.45), 0 0 36px rgba(59,130,246,0.28);
+}
+.neon-animate {
+    animation: neon-pulse 2.6s ease-in-out infinite;
+}
+@keyframes neon-pulse {
+    0%,100% { filter: drop-shadow(0 0 6px rgba(124,58,237,0.12)); transform: translateY(0); }
+    50% { filter: drop-shadow(0 0 12px rgba(124,58,237,0.22)); transform: translateY(-2px); }
+}
+
+/* Headline word spacing when words wrap to their own lines */
+.headline-word {
+    display: inline-block;
+    margin-bottom: 0.65rem; /* vertical spacing between wrapped lines */
+    letter-spacing: 0.02em; /* small tracking increase so letters don't look cramped */
+}
+
+/* Remove extra bottom margin for the last headline-word so final line doesn't overflow */
+.headline-word:last-child {
+    margin-bottom: 0; 
+}
+
+/* Extra safe padding for very large headlines to avoid clipping on small viewports */
+.hero-safe-padding {
+    padding-bottom: 4.5rem; /* extra bottom space under hero content */
+}
+
+/* Neon border utilities for cards (use with Tailwind layout wrappers) */
+.neon-border {
+    position: relative;
+}
+.neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px; /* sit just outside the element's border */
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(90deg, rgba(59,130,246,0.12), rgba(124,58,237,0.14), rgba(59,130,246,0.12));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    filter: blur(8px);
+    opacity: 0.95;
+    z-index: 0;
+}
+
+/* Strong neon for highlighted/popular card */
+.neon-border--strong::before {
+    background: radial-gradient(ellipse at 10% 20%, rgba(96,165,250,0.35), rgba(59,130,246,0.25) 10%, rgba(124,58,237,0.28) 40%, rgba(99,102,241,0.18) 70%), linear-gradient(90deg, rgba(59,130,246,0.18), rgba(124,58,237,0.28));
+    filter: blur(12px) drop-shadow(0 8px 28px rgba(59,130,246,0.14));
+}
+
+/* Subtle neon edge for regular cards */
+.neon-border--subtle::before {
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(124,58,237,0.08));
+    filter: blur(6px);
+    opacity: 0.7;
+}
+
+/* Add an inner glow layer (for dark backgrounds) */
+.neon-inner-glow {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), inset 0 -8px 24px rgba(0,0,0,0.35);
+}
+
+/* Utility to slightly lift card and intensify glow on hover */
+.neon-hover-boost:hover::before {
+    filter: blur(14px) drop-shadow(0 14px 40px rgba(99,102,241,0.15));
+}
+
+/* -------------------------------------------------------------------- */
+/* Search component styles (merged from src/styles/search.css)         */
+/* These variables and helpers are used by the SearchButton / Input UI. */
+/* Keep them here so global theme tokens are centralized in globals.css */
+/* -------------------------------------------------------------------- */
+
+:root{
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --input: #e6e6e6;
+    --ring: #7c3aed;
+    --muted-foreground: rgba(15,23,42,0.6);
+    --accent: #6d28d9;
+}
+
+.dark{
+    --background: #0b1220;
+    --foreground: #f8fafc;
+    --input: rgba(255,255,255,0.06);
+    --ring: #8b5cf6;
+    --muted-foreground: rgba(255,255,255,0.7);
+    --accent: #7c3aed;
+}
+
+@layer base{
+    body{ background-color: var(--background); color: var(--foreground); }
+}
+
+/* optional helper for search glow */
+.search-glow{
+    box-shadow: 0 0 18px rgba(255,255,255,0.95), 0 0 36px rgba(124,58,237,0.55);
+    border-color: #fff;
+}

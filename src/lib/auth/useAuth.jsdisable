@@ -1,0 +1,174 @@
+/**
+ * Unified Auth Hook for Client Components
+ * Works with both NextAuth and Cognito
+ */
+
+import { useEffect, useState } from 'react';
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
+import { isCognito } from './config';
+import {
+  signInWithCognito,
+  signUpWithCognito,
+  signOutFromCognito,
+  getCurrentCognitoUser,
+  confirmSignUpWithCognito,
+  resendVerificationCode,
+} from './cognito';
+
+/**
+ * Custom hook for authentication
+ * Automatically switches between NextAuth and Cognito
+ */
+export const useAuth = () => {
+  const nextAuthSession = useSession();
+  const [cognitoUser, setCognitoUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const useCognito = isCognito();
+
+  // Load Cognito user on mount
+  useEffect(() => {
+    if (useCognito) {
+      loadCognitoUser();
+    } else {
+      setLoading(nextAuthSession.status === 'loading');
+    }
+  }, [useCognito, nextAuthSession.status]);
+
+  const loadCognitoUser = async () => {
+    setLoading(true);
+    const result = await getCurrentCognitoUser();
+    if (result.success) {
+      setCognitoUser(result.user);
+    }
+    setLoading(false);
+  };
+
+  /**
+   * Sign in with email and password
+   */
+  const signIn = async (email, password) => {
+    if (useCognito) {
+      const result = await signInWithCognito(email, password);
+      if (result.success) {
+        await loadCognitoUser();
+      }
+      return result;
+    }
+
+    // NextAuth sign in
+    const result = await nextAuthSignIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    return {
+      success: true,
+      user: result.user,
+    };
+  };
+
+  /**
+   * Sign up new user
+   */
+  const signUp = async (email, password, name) => {
+    if (useCognito) {
+      return signUpWithCognito(email, password, name);
+    }
+
+    // For NextAuth, call your custom register API
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.message || 'Registration failed',
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Registration successful',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Registration failed',
+      };
+    }
+  };
+
+  /**
+   * Sign out
+   */
+  const signOut = async () => {
+    if (useCognito) {
+      const result = await signOutFromCognito();
+      if (result.success) {
+        setCognitoUser(null);
+      }
+      return result;
+    }
+
+    // NextAuth sign out
+    await nextAuthSignOut({ redirect: false });
+    return { success: true };
+  };
+
+  /**
+   * Confirm sign up with verification code (Cognito only)
+   */
+  const confirmSignUp = async (email, code) => {
+    if (useCognito) {
+      return confirmSignUpWithCognito(email, code);
+    }
+
+    return { success: true, message: 'No confirmation needed' };
+  };
+
+  /**
+   * Resend verification code (Cognito only)
+   */
+  const resendCode = async (email) => {
+    if (useCognito) {
+      return resendVerificationCode(email);
+    }
+
+    return { success: false, error: 'Not supported' };
+  };
+
+  // Get current user and session
+  const user = useCognito ? cognitoUser : nextAuthSession.data?.user;
+  const isAuthenticated = useCognito ? !!cognitoUser : nextAuthSession.status === 'authenticated';
+
+  return {
+    user,
+    isAuthenticated,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    confirmSignUp,
+    resendCode,
+    session: useCognito ? { user: cognitoUser } : nextAuthSession.data,
+    status: useCognito
+      ? (loading ? 'loading' : isAuthenticated ? 'authenticated' : 'unauthenticated')
+      : nextAuthSession.status,
+  };
+};
+
+export default useAuth;

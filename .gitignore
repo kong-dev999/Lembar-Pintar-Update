@@ -1,35 +1,107 @@
 # Dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 
-# Production
-/build
+# Testing
+/coverage
+
+# Next.js
 /.next/
 /out/
+next-env.d.ts
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Production
+/build
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Misc
+.DS_Store
+*.pem
+Thumbs.db
 
 # Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+
+# Local env files - JANGAN COMMIT!
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# Cache
+.cache
+.parcel-cache
+.npm
+.eslintcache
+
+# Optional
+*.tgz
+.yarn-integrity
+
+# Prisma
+# /prisma/migrations
+# /prisma/migrations/migration_lock.toml
+# /prisma/dev.db*
+# /prisma/*.db*
+
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*.save
+*.swp
+*.tmp
+
+# Test files
+*.test.js.snap
+/test-*.js
+/__tests__/coverage/
+
+# AWS & Deployment
+.aws/
+.amplifyrc
+#amplify_outputs.json
+!amplify_outputs.example.json
+
+# Database files (local)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs & Reports
+logs/
+*.report
+coverage/
+.nyc_output/
+
+# OS & Editor specific
 .DS_Store
 Thumbs.db
+desktop.ini
+*~
+.AppleDouble
+.LSOverride
+
+# Misc generated files
+.prettierignore
+.huskyrc
+.commitlintrc

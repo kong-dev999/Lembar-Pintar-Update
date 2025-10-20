@@ -1,0 +1,8 @@
+import NextAuth from 'next-auth';
+import { authOptions } from '@/lib/server/auth';
+
+// Export authOptions for other files to import
+export { authOptions };
+
+// Default export for NextAuth API route
+export default NextAuth(authOptions);

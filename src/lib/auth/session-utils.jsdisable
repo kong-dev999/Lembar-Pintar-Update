@@ -1,0 +1,118 @@
+/**
+ * Session Utilities
+ * Helper functions for managing auth sessions (Cognito & NextAuth)
+ */
+
+import { signOut as nextAuthSignOut } from 'next-auth/react';
+import { signOutFromCognito } from './cognito';
+import { isCognito } from './config';
+
+/**
+ * Clear all Cognito tokens from localStorage
+ */
+export function clearCognitoTokens() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('cognito_access_token');
+    localStorage.removeItem('cognito_id_token');
+    localStorage.removeItem('cognito_refresh_token');
+    console.log('✅ Cognito tokens cleared from localStorage');
+  }
+}
+
+/**
+ * Unified sign out
+ * Automatically detects auth provider and signs out accordingly
+ */
+export async function signOut() {
+  const useCognito = isCognito();
+
+  if (useCognito) {
+    // Cognito sign out
+    console.log('Signing out from Cognito...');
+    const result = await signOutFromCognito();
+
+    if (result.success) {
+      console.log('✅ Signed out from Cognito successfully');
+    } else {
+      console.error('❌ Cognito sign out error:', result.error);
+    }
+
+    // Force clear localStorage even if sign out failed
+    clearCognitoTokens();
+
+    // Redirect to login
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
+  } else {
+    // NextAuth sign out
+    console.log('Signing out from NextAuth...');
+    await nextAuthSignOut({ callbackUrl: '/auth/login' });
+  }
+}
+
+/**
+ * Check if user is authenticated (client-side)
+ */
+export function isAuthenticated() {
+  const useCognito = isCognito();
+
+  if (useCognito) {
+    // Check if Cognito tokens exist
+    if (typeof window !== 'undefined') {
+      const idToken = localStorage.getItem('cognito_id_token');
+      return !!idToken;
+    }
+    return false;
+  } else {
+    // For NextAuth, use getSession from next-auth/react
+    // This should be called from a component with useSession hook
+    return false; // Cannot check server-side session from client utils
+  }
+}
+
+/**
+ * Get stored Cognito tokens
+ */
+export function getCognitoTokens() {
+  if (typeof window !== 'undefined' && isCognito()) {
+    return {
+      accessToken: localStorage.getItem('cognito_access_token'),
+      idToken: localStorage.getItem('cognito_id_token'),
+      refreshToken: localStorage.getItem('cognito_refresh_token'),
+    };
+  }
+  return null;
+}
+
+/**
+ * Force clear all sessions (emergency logout)
+ * Use this when you encounter session conflicts
+ */
+export function forceLogout() {
+  console.log('🚨 Force logout initiated...');
+
+  // Clear Cognito tokens
+  clearCognitoTokens();
+
+  // Clear any other auth-related data
+  if (typeof window !== 'undefined') {
+    // Clear any other potential auth keys
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('cognito') || key.includes('auth') || key.includes('token')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Redirect to login
+    window.location.href = '/auth/login';
+  }
+}
+
+export default {
+  signOut,
+  clearCognitoTokens,
+  isAuthenticated,
+  getCognitoTokens,
+  forceLogout,
+};
