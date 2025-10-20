@@ -98,6 +98,12 @@ export default function DesignDashboard() {
   const kategoriRef = useRef(null);
   const kategoriCloseTimeoutRef = useRef(null);
   const [search, setSearch] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalItem, setModalItem] = useState(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [favoriteItems, setFavoriteItems] = useState([]);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
 
   // Kategori is considered active when any subcategory is selected
   const isKategoriActive = selectedCategory !== 'Semua Template';
@@ -132,6 +138,103 @@ export default function DesignDashboard() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close modal on ESC
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') setModalOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  const openModal = (item) => {
+    setModalItem(item);
+    // set isFavorited based on whether the item is already in favorites
+    const exists = favoriteItems.some((f) => f.src === item.src);
+    setIsFavorited(exists);
+    setShareCopied(false);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalItem(null);
+  };
+
+  const handleToggleFavorite = () => setIsFavorited((s) => !s);
+
+  // Toggle favorite for current modalItem and persist to localStorage
+  const toggleFavoriteForModal = () => {
+    if (!modalItem) return;
+    const exists = favoriteItems.some((f) => f.src === modalItem.src);
+    let next = [];
+    if (exists) {
+      next = favoriteItems.filter((f) => f.src !== modalItem.src);
+      setIsFavorited(false);
+    } else {
+      next = [
+        { src: modalItem.src, prefix: modalItem.prefix },
+        ...favoriteItems,
+      ];
+      setIsFavorited(true);
+    }
+    setFavoriteItems(next);
+    try {
+      if (typeof window !== 'undefined')
+        window.localStorage.setItem('lp_favorites', JSON.stringify(next));
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const openFavorites = () => setFavoritesOpen(true);
+  const closeFavorites = () => setFavoritesOpen(false);
+
+  const removeFavorite = (src) => {
+    const next = favoriteItems.filter((f) => f.src !== src);
+    setFavoriteItems(next);
+    try {
+      if (typeof window !== 'undefined')
+        window.localStorage.setItem('lp_favorites', JSON.stringify(next));
+    } catch (e) {}
+  };
+
+  // load favorites from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('lp_favorites');
+      if (raw) setFavoriteItems(JSON.parse(raw));
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const handleShare = async () => {
+    if (!modalItem) return;
+    const url =
+      typeof window !== 'undefined'
+        ? window.location.origin + modalItem.src
+        : modalItem.src;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else if (typeof window !== 'undefined') {
+        // fallback
+        const el = document.createElement('textarea');
+        el.value = url;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch (err) {
+      console.error('copy failed', err);
+    }
+  };
 
   useEffect(
     () => () => {
@@ -168,6 +271,75 @@ export default function DesignDashboard() {
         >
           {!isAccountRoute && (
             <Navbar scrollContainerRef={scrollContainerRef} />
+          )}
+
+          {/* Favorites list modal */}
+          {favoritesOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={closeFavorites}
+              />
+              <div className="relative max-w-4xl w-[92%] bg-[#111] text-white rounded-lg shadow-xl overflow-hidden z-10 p-6">
+                <button
+                  aria-label="close favorites"
+                  className="absolute top-3 right-3 text-black bg-white rounded-full p-2"
+                  onClick={closeFavorites}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+
+                <h3 className="text-xl font-bold mb-4">
+                  Daftar Favorit ({favoriteItems.length})
+                </h3>
+                {favoriteItems.length === 0 ? (
+                  <div className="text-gray-400">Belum ada favorit.</div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {favoriteItems.map((f) => (
+                      <div
+                        key={f.src}
+                        className="bg-white rounded-md overflow-hidden shadow-sm"
+                      >
+                        <img
+                          src={f.src}
+                          alt={f.src.split('/').pop()}
+                          className="w-full h-40 object-cover cursor-pointer"
+                          onClick={() => {
+                            closeFavorites();
+                            openModal(f);
+                          }}
+                        />
+                        <div className="p-2 flex items-center justify-between">
+                          <span className="text-sm text-gray-700">
+                            {f.prefix || 'Umum'}
+                          </span>
+                          <button
+                            className="text-sm text-red-600"
+                            onClick={() => removeFavorite(f.src)}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {isAccountRoute && (
@@ -239,7 +411,6 @@ export default function DesignDashboard() {
 
           <div className="flex flex-col items-center pt-6 pb-4 px-4 justify-center pb-6">
             <div className="relative w-full max-w-3xl px-4">
-              {/* Make the search full-width on mobile and constrained on larger screens */}
               <SearchButton
                 placeholder="Cari materi pembelajaran, aktivitas, dll..."
                 onSearch={(v) => setSearch(v)}
@@ -283,7 +454,7 @@ export default function DesignDashboard() {
                   >
                     <button
                       onClick={() => setKategoriOpen((s) => !s)}
-                      className={`px-4 py-3 rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center gap-2 ${isKategoriActive ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
+                      className={`px-4 py-2 rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center gap-2 ${isKategoriActive ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
                     >
                       <span className="text-sm">Kategori</span>
                       <ChevronRight
@@ -293,7 +464,7 @@ export default function DesignDashboard() {
 
                     {kategoriOpen && (
                       <div
-                        className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-36 bg-white rounded-md shadow-lg z-40 overflow-hidden"
+                        className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-md shadow-lg z-40 overflow-hidden"
                         onMouseEnter={() => {
                           if (kategoriCloseTimeoutRef.current) {
                             clearTimeout(kategoriCloseTimeoutRef.current);
@@ -311,7 +482,7 @@ export default function DesignDashboard() {
                         }}
                       >
                         <button
-                          className="w-full text-center px-2 py-1.5 text-sm hover:bg-[#5122ff] hover:text-white"
+                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
                           onClick={() => {
                             setSelectedCategory('Huruf & Bahasa');
                             setKategoriOpen(false);
@@ -320,7 +491,7 @@ export default function DesignDashboard() {
                           Huruf & Bahasa
                         </button>
                         <button
-                          className="w-full text-center px-2 py-1.5 text-sm hover:bg-[#5122ff] hover:text-white"
+                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
                           onClick={() => {
                             setSelectedCategory('Angka & Berhitung');
                             setKategoriOpen(false);
@@ -329,7 +500,7 @@ export default function DesignDashboard() {
                           Angka & Berhitung
                         </button>
                         <button
-                          className="w-full text-center px-2 py-1.5 text-sm hover:bg-[#5122ff] hover:text-white"
+                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
                           onClick={() => {
                             setSelectedCategory('Hewan & Tumbuhan');
                             setKategoriOpen(false);
@@ -347,13 +518,59 @@ export default function DesignDashboard() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 rounded-full font-semibold border transition-all duration-150 shadow-sm hover:bg-[#5122ff] hover:text-white ${selectedCategory === cat ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
+                  className={`px-4 py-1.5 rounded-full font-semibold border transition-all duration-150 shadow-sm hover:bg-[#5122ff] hover:text-white ${selectedCategory === cat ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
                   // on mobile, keep buttons compact and centered
                 >
                   {cat}
                 </button>
               );
             })}
+          </div>
+
+          {/* Quick buttons */}
+          <div className="flex justify-center gap-6 mt-2 mb-2">
+            <div className="flex flex-col items-center">
+              <button className="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
+                <i className="fa-solid fa-fire text-lg"></i>
+              </button>
+              <span className="text-sm text-white mt-2">Populer</span>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button className="w-12 h-12 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md">
+                <i className="fa-solid fa-image text-lg"></i>
+              </button>
+              <span className="text-sm text-white mt-2">Gambar</span>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button className="w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-md">
+                <i className="fa-solid fa-video text-lg"></i>
+              </button>
+              <span className="text-sm text-white mt-2">Video</span>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button className="w-12 h-12 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-md">
+                <i className="fa-solid fa-file-alt text-lg"></i>
+              </button>
+              <span className="text-sm text-white mt-2">Dokumen</span>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button
+                onClick={openFavorites}
+                className="relative w-12 h-12 rounded-full bg-yellow-500 text-white flex items-center justify-center shadow-md"
+              >
+                <i className="fa-solid fa-star text-lg"></i>
+                {favoriteItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-semibold rounded-full px-1">
+                    {favoriteItems.length}
+                  </span>
+                )}
+              </button>
+              <span className="text-sm text-white mt-2">Favorit</span>
+            </div>
           </div>
 
           <main className="p-5 space-y-6">
@@ -363,8 +580,9 @@ export default function DesignDashboard() {
               {filteredTemplates.map((t, i) => (
                 <div
                   key={i}
-                  className="break-inside-avoid rounded-md shadow-sm overflow-hidden"
+                  className="break-inside-avoid rounded-md shadow-sm overflow-hidden cursor-pointer"
                   style={{ marginBottom: 12 }}
+                  onClick={() => openModal(t)}
                 >
                   <div className="bg-white p-1">
                     <img
@@ -378,6 +596,112 @@ export default function DesignDashboard() {
               ))}
             </div>
           </main>
+
+          {/* Modal */}
+          {modalOpen && modalItem && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={closeModal}
+              />
+
+              <div className="relative max-w-5xl w-[92%] bg-[#252627] text-white rounded-lg shadow-xl overflow-hidden z-10 pr-10 md:pr-12">
+                <button
+                  aria-label="close"
+                  className="absolute top-3 right-3 text-black bg-white rounded-full p-2 hover:bg-gray-100"
+                  onClick={closeModal}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+
+                <div className="flex flex-col md:flex-row">
+                  <div className="md:w-2/3 p-4 flex items-center justify-center">
+                    <img
+                      src={modalItem.src}
+                      alt={modalItem.src.split('/').pop()}
+                      className="max-h-[70vh] w-auto rounded-md object-contain"
+                    />
+                  </div>
+
+                  <div className="md:w-1/3 p-6 flex flex-col gap-4">
+                    {/* Title - generate human friendly title by prefix */}
+                    <h3 className="text-2xl font-extrabold">
+                      {(() => {
+                        const s = modalItem.prefix || '';
+                        if (s.includes('huruf'))
+                          return 'Huruf dan Hewan Alfabet';
+                        if (s.includes('angka')) return 'Angka dan Buah-buahan';
+                        if (s.includes('hewan'))
+                          return 'Hewan & Tumbuhan - Seri Edukasi';
+                        return modalItem.src.split('/').pop();
+                      })()}
+                    </h3>
+
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="px-3 py-1 bg-gray-800 text-sm rounded-full">
+                        {modalItem.prefix || 'Umum'}
+                      </span>
+                      <span className="px-3 py-1 bg-gray-800 text-sm rounded-full">
+                        Kelas TK
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-gray-300">
+                      Versi: Ini adalah deskripsi singkat unik dari template.
+                      Cocok untuk pembelajaran awal, aktivitas mewarnai, dan
+                      latihan pengenalan huruf/angka.
+                    </p>
+
+                    <div className="mt-2">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => router.push('/editor')}
+                          className="px-11 py-2 rounded-md bg-[#5122ff] text-white"
+                        >
+                          Kustom Template ini
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-2">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={toggleFavoriteForModal}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md ${isFavorited ? 'bg-yellow-500 text-black' : 'bg-white text-black'}`}
+                        >
+                          <i className="fa-solid fa-star"></i>
+                          <span>Favorit</span>
+                        </button>
+
+                        <button
+                          onClick={handleShare}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700"
+                        >
+                          <i className="fa-solid fa-link"></i>
+                          <span>
+                            {shareCopied ? 'Link disalin' : 'Bagikan'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
