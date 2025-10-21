@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import Sidebar from '@/pages/account/sidebar';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Meta from '@/components/Meta';
 import { useRouter } from 'next/router';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import SearchButton from '@/components/ui/SearchButton';
 
 export default function DesignDashboard() {
   const user = {
@@ -59,6 +60,28 @@ export default function DesignDashboard() {
     'Lembar Pintar Template'
   );
   const [search, setSearch] = useState('');
+  // Tambahkan state dan efek untuk mengambil gambar dari localStorage
+  const [addedTemplates, setAddedTemplates] = useState([]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('lp_design_templates');
+      if (raw) setAddedTemplates(JSON.parse(raw));
+    } catch (e) {}
+  }, []);
+  // Tambahkan state untuk modal gambar
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalItem, setModalItem] = useState(null);
+
+  // Fungsi untuk membuka modal
+  const openImageModal = (item) => {
+    setModalItem(item);
+    setModalOpen(true);
+  };
+  const closeImageModal = () => {
+    setModalOpen(false);
+    setModalItem(null);
+  };
 
   return (
     <>
@@ -149,52 +172,140 @@ export default function DesignDashboard() {
 
           {/* Searching */}
           <div className="flex flex-col items-center pt-6 pb-4 px-4 justify-center pb-6">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari materi pembelajaran, aktivitas, dll..."
-              className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4b15fcff]"
-            />
+            <div className="relative w-full max-w-3xl px-4">
+              <SearchButton
+                placeholder="Cari materi pembelajaran, aktivitas, dll..."
+                onSearch={(v) => setSearch(v)}
+                className="w-full max-w-xl mx-auto"
+              />
+            </div>
           </div>
 
           {/* Category Bar */}
-          <div className="flex justify-center gap-2 md:gap-4 pb-4">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full font-semibold border transition-all duration-150 shadow-sm
-                  ${selectedCategory === cat ? 'bg-[#4b15fcff] text-white border-[#4b15fcff]' : 'bg-white text-[#4b15fcff] border-gray-200 hover:bg-blue-100'}`}
-              >
-                {cat}
+          <div className="flex gap-3 pb-4 flex-wrap items-center justify-between">
+            <div className="flex gap-3 flex-wrap">
+              <button className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition">
+                Type <span className="ml-2">&#9662;</span>
               </button>
-            ))}
+              <button className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition">
+                Category <span className="ml-2">&#9662;</span>
+              </button>
+              <button className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition">
+                Owner <span className="ml-2">&#9662;</span>
+              </button>
+              <button className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition">
+                Date modified <span className="ml-2">&#9662;</span>
+              </button>
+            </div>
+            <div
+              className="flex gap-4 items-center ml-auto"
+              style={{ marginRight: '32px' }}
+            >
+              {/* Sort Icon */}
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M7 7l5-5 5 5" />
+                <path d="M7 17l5 5 5-5" />
+              </svg>
+              {/* List Icon */}
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="5" cy="6" r="1" />
+                <circle cx="5" cy="12" r="1" />
+                <circle cx="5" cy="18" r="1" />
+                <line x1="9" y1="6" x2="21" y2="6" />
+                <line x1="9" y1="12" x2="21" y2="12" />
+                <line x1="9" y1="18" x2="21" y2="18" />
+              </svg>
+            </div>
           </div>
-          <main className="p-5 space-y-6">
-            {/* Grid Asset Gambar */}
-            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-              {shuffledTemplates
-                .filter((src) =>
-                  src.toLowerCase().includes(search.toLowerCase())
-                )
-                .map((src, i) => (
+
+          {/* Tampilkan gambar yang sudah ditambahkan di halaman design.js */}
+          {addedTemplates.length > 0 && (
+            <div className="p-5">
+              <h3 className="text-xl font-bold text-white mb-4">
+                Template yang sudah ditambahkan
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {addedTemplates.map((item, idx) => (
                   <div
-                    key={i}
-                    className="break-inside-avoid rounded-xl bg-white shadow-lg p-3 mb-6"
+                    key={idx}
+                    className="rounded-md shadow-sm overflow-hidden bg-white cursor-pointer"
+                    onClick={() => openImageModal(item)}
                   >
                     <img
-                      src={src}
-                      alt={`HURUF ${i + 1}`}
-                      className="w-full rounded-lg object-cover mb-3"
+                      src={item.src}
+                      alt={item.src.split('/').pop()}
+                      className="w-full block rounded-md object-cover border-4 border-white"
+                      style={{ display: 'block', lineHeight: 0 }}
                     />
-                    <span className="font-medium text-[#4b15fcff]">
-                      HURUF {i + 1}
-                    </span>
                   </div>
                 ))}
+              </div>
             </div>
-          </main>
+          )}
+
+          {/* Modal gambar di design.js */}
+          {modalOpen && modalItem && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={closeImageModal}
+              />
+              <div className="relative max-w-xl w-[92%] bg-[#252627] text-white rounded-lg shadow-xl overflow-hidden z-10 p-8">
+                <button
+                  aria-label="close"
+                  className="absolute top-3 right-3 text-black bg-white rounded-full p-2 hover:bg-gray-100"
+                  onClick={closeImageModal}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <div className="flex flex-col items-center">
+                  <img
+                    src={modalItem.src}
+                    alt={modalItem.src.split('/').pop()}
+                    className="max-h-[60vh] w-auto rounded-md object-contain border-4 border-white"
+                  />
+                  <button
+                    className="mt-6 px-8 py-2 rounded-md bg-[#5122ff] hover:bg-[#440db5] text-white font-bold text-lg flex items-center gap-2"
+                    onClick={closeImageModal}
+                  >
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Edit Kembali
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

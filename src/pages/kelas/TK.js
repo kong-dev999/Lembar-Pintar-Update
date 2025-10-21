@@ -1,4 +1,4 @@
-import Navbar from '../../pelajari/navbar';
+import Navbar from '../pelajari/navbar';
 import { Menu, ChevronRight } from 'lucide-react';
 import Meta from '@/components/Meta';
 import React, { useMemo } from 'react';
@@ -92,7 +92,7 @@ export default function DesignDashboard() {
 
   // Category and search state (moved above the filteredTemplates computation so
   // they can be referenced safely inside the memo).
-  const categories = ['Semua Template', 'Kategori'];
+  const categories = ['Semua Template', 'Materi'];
   const [selectedCategory, setSelectedCategory] = useState('Semua Template');
   const [kategoriOpen, setKategoriOpen] = useState(false);
   const kategoriRef = useRef(null);
@@ -104,6 +104,8 @@ export default function DesignDashboard() {
   const [shareCopied, setShareCopied] = useState(false);
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [FavCopied, setFavCopied] = useState(false);
+  const [showAddPopup, setShowAddPopup] = useState(false);
 
   // Kategori is considered active when any subcategory is selected
   const isKategoriActive = selectedCategory !== 'Semua Template';
@@ -244,6 +246,17 @@ export default function DesignDashboard() {
     []
   );
 
+  const openModalFromFavorites = (item) => {
+    setModalItem(item);
+    setModalOpen(true);
+  };
+
+  // Fix issue with navigating to categories from the favorites page
+  const navigateToCategory = (category) => {
+    setSelectedCategory(category);
+    setFavoritesOpen(false); // Close favorites section when navigating to a category
+  };
+
   return (
     <>
       <Meta />
@@ -271,75 +284,6 @@ export default function DesignDashboard() {
         >
           {!isAccountRoute && (
             <Navbar scrollContainerRef={scrollContainerRef} />
-          )}
-
-          {/* Favorites list modal */}
-          {favoritesOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div
-                className="absolute inset-0 bg-black/60"
-                onClick={closeFavorites}
-              />
-              <div className="relative max-w-4xl w-[92%] bg-[#111] text-white rounded-lg shadow-xl overflow-hidden z-10 p-6">
-                <button
-                  aria-label="close favorites"
-                  className="absolute top-3 right-3 text-black bg-white rounded-full p-2"
-                  onClick={closeFavorites}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-
-                <h3 className="text-xl font-bold mb-4">
-                  Daftar Favorit ({favoriteItems.length})
-                </h3>
-                {favoriteItems.length === 0 ? (
-                  <div className="text-gray-400">Belum ada favorit.</div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {favoriteItems.map((f) => (
-                      <div
-                        key={f.src}
-                        className="bg-white rounded-md overflow-hidden shadow-sm"
-                      >
-                        <img
-                          src={f.src}
-                          alt={f.src.split('/').pop()}
-                          className="w-full h-40 object-cover cursor-pointer"
-                          onClick={() => {
-                            closeFavorites();
-                            openModal(f);
-                          }}
-                        />
-                        <div className="p-2 flex items-center justify-between">
-                          <span className="text-sm text-gray-700">
-                            {f.prefix || 'Umum'}
-                          </span>
-                          <button
-                            className="text-sm text-red-600"
-                            onClick={() => removeFavorite(f.src)}
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           )}
 
           {isAccountRoute && (
@@ -405,7 +349,7 @@ export default function DesignDashboard() {
             style={{ transition: 'padding 200ms ease' }}
           >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-4">
-              TK Paud - Kelas A
+              Taman Kanak - Kanak (TK)
             </h2>
           </div>
 
@@ -422,10 +366,10 @@ export default function DesignDashboard() {
           {/* Category Bar */}
           <div className="flex justify-center gap-2 md:gap-4 pb-4">
             {categories.map((cat) => {
-              if (cat === 'Kategori') {
+              if (cat === 'Materi') {
                 return (
                   <div
-                    key="kategori"
+                    key="materi"
                     className="relative"
                     ref={kategoriRef}
                     onMouseEnter={
@@ -456,7 +400,7 @@ export default function DesignDashboard() {
                       onClick={() => setKategoriOpen((s) => !s)}
                       className={`px-4 py-2 rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center gap-2 ${isKategoriActive ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
                     >
-                      <span className="text-sm">Kategori</span>
+                      <span className="text-sm">Materi</span>
                       <ChevronRight
                         className={`ml-1 h-4 w-4 transform transition-transform duration-200 ${kategoriOpen ? 'rotate-90' : 'rotate-0'}`}
                       />
@@ -483,28 +427,21 @@ export default function DesignDashboard() {
                       >
                         <button
                           className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() => {
-                            setSelectedCategory('Huruf & Bahasa');
-                            setKategoriOpen(false);
-                          }}
+                          onClick={() => navigateToCategory('Huruf & Bahasa')}
                         >
                           Huruf & Bahasa
                         </button>
                         <button
                           className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() => {
-                            setSelectedCategory('Angka & Berhitung');
-                            setKategoriOpen(false);
-                          }}
+                          onClick={() =>
+                            navigateToCategory('Angka & Berhitung')
+                          }
                         >
                           Angka & Berhitung
                         </button>
                         <button
                           className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() => {
-                            setSelectedCategory('Hewan & Tumbuhan');
-                            setKategoriOpen(false);
-                          }}
+                          onClick={() => navigateToCategory('Hewan & Tumbuhan')}
                         >
                           Hewan & Tumbuhan
                         </button>
@@ -517,7 +454,7 @@ export default function DesignDashboard() {
               return (
                 <button
                   key={cat}
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => navigateToCategory(cat)}
                   className={`px-4 py-1.5 rounded-full font-semibold border transition-all duration-150 shadow-sm hover:bg-[#5122ff] hover:text-white ${selectedCategory === cat ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
                   // on mobile, keep buttons compact and centered
                 >
@@ -573,29 +510,112 @@ export default function DesignDashboard() {
             </div>
           </div>
 
-          <main className="p-5 space-y-6">
-            {/* Masonry-like multi-column layout. Use 2 columns by default (mobile),
-                increase to 3 on md and 4 on lg to match previous behavior. */}
-            <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
-              {filteredTemplates.map((t, i) => (
-                <div
-                  key={i}
-                  className="break-inside-avoid rounded-md shadow-sm overflow-hidden cursor-pointer"
-                  style={{ marginBottom: 12 }}
-                  onClick={() => openModal(t)}
-                >
-                  <div className="bg-white p-1">
-                    <img
-                      src={t.src}
-                      alt={t.src.split('/').pop()}
-                      className="w-full block rounded-md object-cover"
-                      style={{ display: 'block', lineHeight: 0 }}
-                    />
+          {/* Favorites Section */}
+          {favoritesOpen && (
+            <main className="p-5 space-y-6">
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white">Favorit Saya</h2>
+                {favoriteItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 512 512"
+                      width="128"
+                      height="128"
+                    >
+                      {/* Bookmark Background */}
+                      <path
+                        d="M128 32c-8.8 0-16 7.2-16 16v416c0 6.4 3.8 12.2 9.6 14.8s12.8 1.6 17.6-3l126.4-115.2 126.4 115.2c4.8 4.6 11.8 5.6 17.6 3s9.6-8.4 9.6-14.8V48c0-8.8-7.2-16-16-16H128z"
+                        fill="#ffb52e"
+                        stroke="#ffffff"
+                        stroke-width="24"
+                        stroke-linejoin="round"
+                      />
+
+                      {/* Centered Star */}
+                      <path
+                        d="M266 185
+                          L286 231
+                          L336 236
+                          L300 271
+                          L310 321
+                          L266 297
+                          L222 321
+                          L232 271
+                          L196 236
+                          L246 231
+                          Z"
+                        fill="#000000"
+                        stroke="#ffffff"
+                        stroke-width="16"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    <p className="text-white text-lg font-semibold">
+                      Folder masih kosong
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Item yang Anda tandai akan muncul di sini.{' '}
+                      <a
+                        href="#"
+                        className="text-blue-400 underline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setSelectedCategory('Semua Template');
+                          setFavoritesOpen(false);
+                        }}
+                      >
+                        Mulai menjelajah
+                      </a>
+                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </main>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {favoriteItems.map((item, index) => (
+                      <div
+                        key={index}
+                        className="rounded-md shadow-sm overflow-hidden cursor-pointer"
+                        style={{ marginBottom: 12 }}
+                        onClick={() => openModalFromFavorites(item)}
+                      >
+                        <img
+                          src={item.src}
+                          alt={item.src.split('/').pop()}
+                          className="w-full block rounded-md object-cover border-4 border-white"
+                          style={{ display: 'block', lineHeight: 0 }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </main>
+          )}
+
+          {/* Main Content */}
+          {!favoritesOpen && (
+            <main className="p-5 space-y-6">
+              <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+                {filteredTemplates.map((t, i) => (
+                  <div
+                    key={i}
+                    className="break-inside-avoid rounded-md shadow-sm overflow-hidden cursor-pointer"
+                    style={{ marginBottom: 12 }}
+                    onClick={() => openModal(t)}
+                  >
+                    <div className="bg-white p-1">
+                      <img
+                        src={t.src}
+                        alt={t.src.split('/').pop()}
+                        className="w-full block rounded-md object-cover"
+                        style={{ display: 'block', lineHeight: 0 }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </main>
+          )}
 
           {/* Modal */}
           {modalOpen && modalItem && (
@@ -668,10 +688,37 @@ export default function DesignDashboard() {
                     <div className="mt-2">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => router.push('/editor')}
-                          className="px-11 py-2 rounded-md bg-[#5122ff] text-white"
+                          onClick={() => {
+                            // Simpan gambar ke localStorage
+                            try {
+                              if (typeof window !== 'undefined' && modalItem) {
+                                const raw = window.localStorage.getItem(
+                                  'lp_design_templates'
+                                );
+                                let arr = [];
+                                if (raw) arr = JSON.parse(raw);
+                                // Cek duplikat
+                                if (!arr.some((t) => t.src === modalItem.src)) {
+                                  arr.unshift({
+                                    src: modalItem.src,
+                                    prefix: modalItem.prefix,
+                                  });
+                                  window.localStorage.setItem(
+                                    'lp_design_templates',
+                                    JSON.stringify(arr)
+                                  );
+                                }
+                              }
+                            } catch (e) {}
+                            // Tampilkan popup
+                            setShowAddPopup(true);
+                            setTimeout(() => setShowAddPopup(false), 2000);
+                            // Hapus router.push('/account/design');
+                          }}
+                          className="px-11 py-2 rounded-md bg-[#5122ff] hover:bg-[#440db5] text-white flex items-center gap-2"
                         >
-                          Kustom Template ini
+                          <i className="fa-regular fa-pen-to-square"></i>
+                          <span>Kustom Template ini</span>
                         </button>
                       </div>
                     </div>
@@ -679,18 +726,34 @@ export default function DesignDashboard() {
                     <div className="mt-2">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={toggleFavoriteForModal}
+                          onClick={() => {
+                            toggleFavoriteForModal();
+                            setFavCopied(!isFavorited);
+                          }}
                           className={`flex items-center gap-2 px-4 py-2 rounded-md ${isFavorited ? 'bg-yellow-500 text-black' : 'bg-white text-black'}`}
                         >
-                          <i className="fa-solid fa-star"></i>
-                          <span>Favorit</span>
+                          {isFavorited ? (
+                            <>
+                              <i className="fa-solid fa-star"></i>
+                              <span>Unfavorit</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-regular fa-star"></i>
+                              <span>Favorit</span>
+                            </>
+                          )}
                         </button>
 
                         <button
                           onClick={handleShare}
                           className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700"
                         >
-                          <i className="fa-solid fa-link"></i>
+                          {shareCopied ? (
+                            <i className="fa-solid fa-link"></i>
+                          ) : (
+                            <i className="fa-regular fa-share-from-square"></i>
+                          )}
                           <span>
                             {shareCopied ? 'Link disalin' : 'Bagikan'}
                           </span>
@@ -700,6 +763,13 @@ export default function DesignDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {showAddPopup && (
+            <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] font-bold text-lg flex items-center gap-3">
+              <i className="fa-solid fa-square-check text-2xl"></i>
+              Template berhasil di tambahkan
             </div>
           )}
         </div>

@@ -204,22 +204,21 @@ function SidebarItem({ href, children, active, useAccountPrefix = false }) {
   return (
     <Link
       href={validHref}
-      className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm no-underline focus:outline-none focus:ring-0 focus-visible:outline-none ${
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm no-underline focus:outline-none focus:ring-0 focus-visible:outline-none ${
         active ? 'bg-blue-50 text-black' : 'hover:bg-gray-50 hover:text-black'
       }`}
     >
-      <span className="truncate">{children}</span>
-      {active && (
-        <span className="absolute right-10 w-2 h-2 rounded-full bg-blue-600 z-0" />
-      )}
+      <span className="truncate flex items-center gap-2 px-1">
+        {children}
+      </span>
     </Link>
   );
 }
 
-/* ===== Komponen SidebarDropdown ===== */
+/* ===== Komponen Sidebaritem ===== */
 import { useRef, useEffect } from 'react';
 
-function SidebarDropdown({
+function Sidebaritem({
   label,
   children,
   onOpenChange,
@@ -252,7 +251,7 @@ function SidebarDropdown({
         </span>
       </button>
       {open && (
-        <div className="ml-4 pl-2 border-l border-gray-200 space-y-1">
+        <div className="ml-4 pl-2 border-l border-gray-200 space-y-1 mt-2">
           {children}
         </div>
       )}
@@ -262,6 +261,7 @@ function SidebarDropdown({
 
 function SidebarMenuWithScroll({ active }) {
   const [templateOpen, setTemplateOpen] = useState(false);
+  const router = useRouter();
   if (typeof window !== 'undefined' && window.setTemplateOpenSidebar) {
     setTemplateOpen(true);
     window.setTemplateOpenSidebar = false;
@@ -281,7 +281,7 @@ function SidebarMenuWithScroll({ active }) {
       </SidebarItem>
 
       <div className="border-t border-gray-200 my-2 pt-2">
-        <SidebarDropdown
+        <Sidebaritem
           label={
             <span className="flex items-center w-full rounded-md">
               <i className="fa-solid fa-layer-group px-2"></i>Template
@@ -291,81 +291,35 @@ function SidebarMenuWithScroll({ active }) {
           defaultOpen={active === 'template'}
           isActive={active === 'template'}
         >
-          <SidebarDropdown
-            label={
-              <span className="flex items-center w-full rounded-md">
-                <i class="fa-solid fa-school px-2"></i>TK
-              </span>
-            }
+          <SidebarItem
+            href="/kelas/TK"
+            useAccountPrefix={true}
+            active={router?.asPath?.startsWith('/account/kelas/TK')}
           >
-            <SidebarItem href="/kelas/TK/A" useAccountPrefix={true}>
-              Kelas A
-            </SidebarItem>
-            <SidebarItem href="/kelas/TK/B" useAccountPrefix={true}>
-              Kelas B
-            </SidebarItem>
-          </SidebarDropdown>
-          <SidebarDropdown
-            label={
-              <span className="flex items-center w-full rounded-md">
-                <i class="fa-solid fa-school px-2"></i>SD
-              </span>
-            }
+            <i className="fa-solid fa-school px-2"></i>TK
+          </SidebarItem>
+          <SidebarItem
+            href="/kelas/SD"
+            useAccountPrefix={true}
+            active={router?.asPath?.startsWith('/account/kelas/SD')}
           >
-            <SidebarItem href="/kelas/SD/1" useAccountPrefix={true}>
-              Kelas 1
-            </SidebarItem>
-            <SidebarItem href="/kelas/SD/2" useAccountPrefix={true}>
-              Kelas 2
-            </SidebarItem>
-            <SidebarItem href="/kelas/SD/3" useAccountPrefix={true}>
-              Kelas 3
-            </SidebarItem>
-            <SidebarItem href="/kelas/SD/4" useAccountPrefix={true}>
-              Kelas 4
-            </SidebarItem>
-            <SidebarItem href="/kelas/SD/5" useAccountPrefix={true}>
-              Kelas 5
-            </SidebarItem>
-            <SidebarItem href="/kelas/SD/6" useAccountPrefix={true}>
-              Kelas 6
-            </SidebarItem>
-          </SidebarDropdown>
-          <SidebarDropdown
-            label={
-              <span className="flex items-center w-full rounded-md">
-                <i class="fa-solid fa-school px-2"></i>SMP
-              </span>
-            }
+            <i className="fa-solid fa-school px-2"></i>SD
+          </SidebarItem>
+          {/* <SidebarItem
+            href="/kelas/SMP"
+            useAccountPrefix={true}
+            active={router?.asPath?.startsWith('/account/kelas/SMP')}
           >
-            <SidebarItem href="/kelas/SMP/7" useAccountPrefix={true}>
-              Kelas 7
-            </SidebarItem>
-            <SidebarItem href="/kelas/SMP/8" useAccountPrefix={true}>
-              Kelas 8
-            </SidebarItem>
-            <SidebarItem href="/kelas/SMP/9" useAccountPrefix={true}>
-              Kelas 9
-            </SidebarItem>
-          </SidebarDropdown>
-          <SidebarDropdown
-            label={
-              <span className="flex items-center w-full rounded-md">
-                <i class="fa-solid fa-school px-2"></i>SMA
-              </span>
-            }
+            <i className="fa-solid fa-school px-2"></i>SMP
+          </SidebarItem>
+          <SidebarItem
+            href="/kelas/SMA"
+            useAccountPrefix={true}
+            active={router?.asPath?.startsWith('/account/kelas/SMA')}
           >
-            <SidebarItem href="/kelas/SMA/10" useAccountPrefix={true}>
-              Kelas 10
-            </SidebarItem>
-            <SidebarItem href="/kelas/SMA/11" useAccountPrefix={true}>
-              Kelas 11
-            </SidebarItem>
-            <SidebarItem href="/kelas/SMA/12" useAccountPrefix={true}>
-              Kelas 12
-            </SidebarItem>
-          </SidebarDropdown>
-        </SidebarDropdown>
+            <i className="fa-solid fa-school px-2"></i>SMA
+          </SidebarItem> */}
+        </Sidebaritem>
       </div>
 
       <SidebarItem href="/account/payment" active={active === 'payment'}>
