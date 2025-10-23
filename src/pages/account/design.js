@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import Sidebar from '@/pages/account/sidebar';
 import { Menu } from 'lucide-react';
 import Meta from '@/components/Meta';
-import { useRouter } from 'next/router';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import SearchButton from '@/components/ui/SearchButton';
@@ -15,7 +14,6 @@ export default function DesignDashboard() {
       image: '/images/gender/male.png',
     },
   };
-  const router = useRouter();
   const { signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile
@@ -50,16 +48,7 @@ export default function DesignDashboard() {
     []
   );
 
-  // shuffle once per mount for random ordering
-  const shuffledTemplates = useMemo(() => {
-    return templates.slice().sort(() => Math.random() - 0.5);
-  }, [templates]);
-  // Kategori
-  const categories = ['Lembar Pintar Template', 'Kategori'];
-  const [selectedCategory, setSelectedCategory] = useState(
-    'Lembar Pintar Template'
-  );
-  const [search, setSearch] = useState('');
+  const [setSearch] = useState('');
   // Tambahkan state dan efek untuk mengambil gambar dari localStorage
   const [addedTemplates, setAddedTemplates] = useState([]);
   useEffect(() => {
@@ -73,11 +62,10 @@ export default function DesignDashboard() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [favoriteItems, setFavoriteItems] = useState([]);
 
-  // view mode: 'grid' or 'list'
-  const [viewMode, setViewMode] = useState('grid');
-  // type filter: 'any' | 'image' | 'video' | 'document'
-  const [typeFilter, setTypeFilter] = useState('any');
-  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+
+  const [viewMode] = useState('grid');
+  const [typeFilter] = useState('any');
+  const [setTypeDropdownOpen] = useState(false);
   const typeRef = useRef(null);
 
   useEffect(() => {
@@ -244,7 +232,10 @@ export default function DesignDashboard() {
                     <div className="py-2">
                       <button
                         className="block w-full px-2 py-2 text-center text-black border-b border-gray-100 hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                        onClick={() => router.push('account/profile')}
+                        onClick={() => {
+                          if (typeof window !== 'undefined')
+                            window.location.href = '/account/profile';
+                        }}
                       >
                         <i className="fa-solid fa-circle-user"></i>
                         Profil
@@ -283,129 +274,6 @@ export default function DesignDashboard() {
                 onSearch={(v) => setSearch(v)}
                 className="w-full max-w-xl mx-auto"
               />
-            </div>
-          </div>
-
-          {/* Category Bar */}
-          <div className="flex gap-3 pb-4 flex-wrap items-center justify-between">
-            <div className="flex gap-3 flex-wrap">
-              <div className="relative" ref={typeRef}>
-                <button
-                  onClick={() => setTypeDropdownOpen((s) => !s)}
-                  className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition"
-                >
-                  {typeFilter === 'any'
-                    ? 'Any Type'
-                    : typeFilter === 'image'
-                      ? 'Gambar'
-                      : typeFilter === 'video'
-                        ? 'Vedio'
-                        : 'Document'}
-                  <span className="ml-2">&#9662;</span>
-                </button>
-                {typeDropdownOpen && (
-                  <div className="absolute mt-2 w-56 bg-black/80 rounded shadow-lg py-2 z-40">
-                    <button className="w-full text-left px-4 py-2 text-white hover:bg-white/10">
-                      Any Type
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10"
-                      onClick={() => {
-                        setTypeFilter('image');
-                        setTypeDropdownOpen(false);
-                      }}
-                    >
-                      Gambar
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10"
-                      onClick={() => {
-                        setTypeFilter('video');
-                        setTypeDropdownOpen(false);
-                      }}
-                    >
-                      Vedio
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10"
-                      onClick={() => {
-                        setTypeFilter('document');
-                        setTypeDropdownOpen(false);
-                      }}
-                    >
-                      Document
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button className="rounded-full border border-gray-400 px-5 py-2 text-white bg-transparent flex items-center gap-2 font-semibold hover:bg-[#22063a] transition">
-                Date modified <span className="ml-2">&#9662;</span>
-              </button>
-            </div>
-            <div
-              className="flex gap-4 items-center ml-auto"
-              style={{ marginRight: '32px' }}
-            >
-              {/* Sort Icon */}
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M7 7l5-5 5 5" />
-                <path d="M7 17l5 5 5-5" />
-              </svg>
-              {/* View toggle (grid / list) */}
-              <button
-                onClick={() =>
-                  setViewMode((v) => (v === 'grid' ? 'list' : 'grid'))
-                }
-                className={`p-1 rounded-md transition ${viewMode === 'grid' ? 'bg-white/10' : 'hover:bg-white/10'}`}
-                aria-label="Toggle view"
-              >
-                {viewMode === 'grid' ? (
-                  // show list icon when currently grid (click to switch to list)
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="5" cy="6" r="1" />
-                    <circle cx="5" cy="12" r="1" />
-                    <circle cx="5" cy="18" r="1" />
-                    <line x1="9" y1="6" x2="21" y2="6" />
-                    <line x1="9" y1="12" x2="21" y2="12" />
-                    <line x1="9" y1="18" x2="21" y2="18" />
-                  </svg>
-                ) : (
-                  // show grid icon when currently list (click to switch to grid)
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="8" height="8" />
-                    <rect x="13" y="3" width="8" height="8" />
-                    <rect x="3" y="13" width="8" height="8" />
-                    <rect x="13" y="13" width="8" height="8" />
-                  </svg>
-                )}
-              </button>
             </div>
           </div>
 
