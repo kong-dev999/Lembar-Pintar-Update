@@ -62,7 +62,6 @@ export default function DesignDashboard() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [favoriteItems, setFavoriteItems] = useState([]);
 
-
   const [viewMode] = useState('grid');
   const [typeFilter] = useState('any');
   const [setTypeDropdownOpen] = useState(false);
