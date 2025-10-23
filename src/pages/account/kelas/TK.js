@@ -608,7 +608,10 @@ export default function DesignDashboard() {
                   if (base.length === 0) {
                     // If no filtered results, fill with seni (17).png
                     for (let i = 0; i < targetCount; i++) {
-                      extended.push({ src: '/images/materi/TK/TK A/seni (17).png', prefix: 'seni' });
+                      extended.push({
+                        src: '/images/materi/TK/TK A/seni (17).png',
+                        prefix: 'seni',
+                      });
                     }
                   } else {
                     let idx = 0;
@@ -621,7 +624,10 @@ export default function DesignDashboard() {
 
                   // Ensure the last 4 items (positions 38..40 zero-based) use seni (17).png
                   for (let i = targetCount - 4; i < targetCount; i++) {
-                    extended[i] = { src: '/images/materi/TK/TK A/seni (17).png', prefix: 'seni' };
+                    extended[i] = {
+                      src: '/images/materi/TK/TK A/seni (17).png',
+                      prefix: 'seni',
+                    };
                   }
 
                   return extended.map((t, i) => (
