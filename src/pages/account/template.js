@@ -1,18 +1,10 @@
-import {
-  Menu,
-  ChevronRight,
-  Layers,
-  GraduationCap,
-  BookCopy,
-  Star,
-} from 'lucide-react';
+import { Menu, ChevronRight, Layers, GraduationCap, Star } from 'lucide-react';
 import Meta from '@/components/Meta';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Sidebar from '@/pages/account/sidebar';
 import SearchButton from '@/components/ui/SearchButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useRef, useEffect } from 'react';
 
 export default function DesignDashboard() {
   const user = {
@@ -40,6 +32,7 @@ export default function DesignDashboard() {
 
   const toggleMobileSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleSidebarCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
+
   const dropdownRef = useRef(null);
   const avatarRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -54,8 +47,10 @@ export default function DesignDashboard() {
   useEffect(() => {
     function handleDocumentClick(e) {
       if (!dropdownRef.current || !avatarRef.current) return;
+
       const isClickInsideDropdown = dropdownRef.current.contains(e.target);
       const isClickOnAvatar = avatarRef.current.contains(e.target);
+
       if (!isClickInsideDropdown && !isClickOnAvatar) {
         setDropdownOpen(false);
       }
@@ -66,60 +61,94 @@ export default function DesignDashboard() {
   }, [dropdownRef, avatarRef]);
 
   const templates = useMemo(() => {
-    // In the real project these files live in /public/images/materi/TK/TK A/
-    // We'll create a representative list combining different prefixes.
     const list = [];
+
     // Add some 'huruf' prefixed files
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 11; i++) {
       const name = `huruf${i.toString().padStart(2, '0')}.png`;
-      list.push({ src: `/images/materi/TK/TK A/${name}`, prefix: 'huruf' });
+      list.push({
+        src: `/images/template/${name}`,
+        prefix: 'huruf',
+      });
     }
+
     // Add some 'angka' prefixed files
     for (let i = 1; i <= 7; i++) {
       const name = `angka${i.toString().padStart(2, '0')}.png`;
-      list.push({ src: `/images/materi/TK/TK A/${name}`, prefix: 'angka' });
+      list.push({
+        src: `/images/template/${name}`,
+        prefix: 'angka',
+      });
     }
+
     // Add some 'hewan' prefixed files
     for (let i = 1; i <= 6; i++) {
       const name = `hewan${i.toString().padStart(2, '0')}.png`;
-      list.push({ src: `/images/materi/TK/TK A/${name}`, prefix: 'hewan' });
+      list.push({
+        src: `/images/template/${name}`,
+        prefix: 'hewan',
+      });
     }
 
     for (let i = 1; i <= 20; i++) {
       const name = `seni (${i}).png`;
-      list.push({ src: `/images/materi/TK/TK A/${name}`, prefix: 'seni' });
+      list.push({
+        src: `/images/template/${name}`,
+        prefix: 'seni',
+      });
     }
 
     return list;
   }, []);
 
-  // Duplicate each template so each image appears twice
-  const duplicatedTemplates = useMemo(() => {
-    const dup = [];
-    templates.forEach((t) => {
-      dup.push({ ...t });
-      dup.push({ ...t });
-    });
-    return dup;
+  const [orderedTemplates, setOrderedTemplates] = useState(templates);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const key = 'lp_template_order';
+      const raw = window.localStorage.getItem(key);
+
+      if (raw) {
+        const order = JSON.parse(raw);
+        const map = new Map(templates.map((t) => [t.src, t]));
+        const next = order.map((src) => map.get(src)).filter(Boolean);
+
+        // Append any new templates that weren't in saved order
+        templates.forEach((t) => {
+          if (!order.includes(t.src)) next.push(t);
+        });
+
+        setOrderedTemplates(next);
+      } else {
+        // Create a shuffled copy using Fisher-Yates
+        const arr = templates.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        const order = arr.map((t) => t.src);
+        window.localStorage.setItem(key, JSON.stringify(order));
+        setOrderedTemplates(arr);
+      }
+    } catch (e) {
+      // ignore any localStorage errors and keep default order
+      setOrderedTemplates(templates);
+    }
   }, [templates]);
 
-  // Shuffle the duplicated list
-  const shuffledTemplates = useMemo(
-    () => duplicatedTemplates.slice().sort(() => Math.random() - 0.5),
-    [duplicatedTemplates]
-  );
+  const categories = ['Template', 'Kelas', 'Favorit'];
 
-  const categories = [
-    'Semua Template',
-    'Kelas A',
-    'Kelas B',
-    'Materi',
-    'Favorit',
-  ];
-  const [selectedCategory, setSelectedCategory] = useState('Semua Template');
+  const [selectedCategory, setSelectedCategory] = useState(
+    'Taman Kanak - Kanak (TK)'
+  );
   const [kategoriOpen, setKategoriOpen] = useState(false);
   const kategoriRef = useRef(null);
   const kategoriCloseTimeoutRef = useRef(null);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const templateRef = useRef(null);
+  const templateCloseTimeoutRef = useRef(null);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalItem, setModalItem] = useState(null);
@@ -131,13 +160,46 @@ export default function DesignDashboard() {
   const [showAddPopup, setShowAddPopup] = useState(false);
 
   // Kategori is considered active when any subcategory is selected
-  const isKategoriActive = selectedCategory !== 'Semua Template';
+  const templateOptions = [
+    'Taman Kanak - Kanak (TK)',
+    'Sekolah Dasar (SD)',
+    'Sekolah Menengah Pertama (SMP)',
+    'Sekolah Menengah Atas (SMA)',
+  ];
 
-  // Compute templates to display based on selectedCategory and search text.
+  const kelasOptions = [
+    'Seni & Kreativitas',
+    'Hewan & Tumbuhan',
+    'Huruf & Bahasa',
+    'Angka & Berhitung',
+  ];
+
+  // selected specific kelas (e.g. 'Kelas 1', 'Kelas A')
+  const [selectedKelasOption, setSelectedKelasOption] = useState(null);
+
+  const isTemplateActive = templateOptions.includes(selectedCategory);
+  const isKelasActive = Boolean(selectedKelasOption);
+
+  // return kelas options depending on currently selected template
+  const getKelasOptionsForTemplate = (template) => {
+    if (!template) return [];
+    if (template.includes('Taman Kanak')) return ['Kelas A', 'Kelas B'];
+    if (template.includes('Sekolah Dasar'))
+      return ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5', 'Kelas 6'];
+    if (template.includes('Sekolah Menengah Pertama'))
+      return ['Kelas 7', 'Kelas 8', 'Kelas 9'];
+    if (template.includes('Sekolah Menengah Atas'))
+      return ['Kelas 10', 'Kelas 11', 'Kelas 12'];
+
+    return ['Kelas A', 'Kelas B'];
+  };
+
+  // Compute templates to display based on selectedCategory and search text
   const filteredTemplates = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (selectedCategory === 'Semua Template') {
-      return shuffledTemplates.filter((t) => t.src.toLowerCase().includes(q));
+
+    if (selectedCategory === 'Template') {
+      return orderedTemplates.filter((t) => t.src.toLowerCase().includes(q));
     }
 
     // Map selectedCategory text to prefix used in filenames
@@ -148,17 +210,21 @@ export default function DesignDashboard() {
     if (selectedCategory.toLowerCase().includes('seni')) prefix = 'seni';
 
     if (!prefix)
-      return shuffledTemplates.filter((t) => t.src.toLowerCase().includes(q));
+      return orderedTemplates.filter((t) => t.src.toLowerCase().includes(q));
 
-    return shuffledTemplates.filter(
+    return orderedTemplates.filter(
       (t) => t.prefix === prefix && t.src.toLowerCase().includes(q)
     );
-  }, [shuffledTemplates, selectedCategory, search]);
+  }, [orderedTemplates, selectedCategory, search]);
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (!kategoriRef.current) return;
-      if (!kategoriRef.current.contains(e.target)) setKategoriOpen(false);
+      if (kategoriRef.current && !kategoriRef.current.contains(e.target)) {
+        setKategoriOpen(false);
+      }
+      if (templateRef.current && !templateRef.current.contains(e.target)) {
+        setTemplateOpen(false);
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -170,6 +236,7 @@ export default function DesignDashboard() {
     function onKey(e) {
       if (e.key === 'Escape') setModalOpen(false);
     }
+
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
@@ -193,19 +260,26 @@ export default function DesignDashboard() {
   // Toggle favorite for current modalItem and persist to localStorage
   const toggleFavoriteForModal = () => {
     if (!modalItem) return;
+
     const exists = favoriteItems.some((f) => f.src === modalItem.src);
     let next = [];
+
     if (exists) {
       next = favoriteItems.filter((f) => f.src !== modalItem.src);
       setIsFavorited(false);
     } else {
       next = [
-        { src: modalItem.src, prefix: modalItem.prefix },
+        {
+          src: modalItem.src,
+          prefix: modalItem.prefix,
+        },
         ...favoriteItems,
       ];
       setIsFavorited(true);
     }
+
     setFavoriteItems(next);
+
     try {
       if (typeof window !== 'undefined')
         window.localStorage.setItem('lp_favorites', JSON.stringify(next));
@@ -220,6 +294,7 @@ export default function DesignDashboard() {
   const removeFavorite = (src) => {
     const next = favoriteItems.filter((f) => f.src !== src);
     setFavoriteItems(next);
+
     try {
       if (typeof window !== 'undefined')
         window.localStorage.setItem('lp_favorites', JSON.stringify(next));
@@ -229,6 +304,7 @@ export default function DesignDashboard() {
   // load favorites from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
     try {
       const raw = window.localStorage.getItem('lp_favorites');
       if (raw) setFavoriteItems(JSON.parse(raw));
@@ -239,10 +315,12 @@ export default function DesignDashboard() {
 
   const handleShare = async () => {
     if (!modalItem) return;
+
     const url =
       typeof window !== 'undefined'
         ? window.location.origin + modalItem.src
         : modalItem.src;
+
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(url);
@@ -255,6 +333,7 @@ export default function DesignDashboard() {
         document.execCommand('copy');
         document.body.removeChild(el);
       }
+
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     } catch (err) {
@@ -266,6 +345,8 @@ export default function DesignDashboard() {
     () => () => {
       if (kategoriCloseTimeoutRef.current)
         clearTimeout(kategoriCloseTimeoutRef.current);
+      if (templateCloseTimeoutRef.current)
+        clearTimeout(templateCloseTimeoutRef.current);
     },
     []
   );
@@ -278,6 +359,14 @@ export default function DesignDashboard() {
   // Fix issue with navigating to categories from the favorites page
   const navigateToCategory = (category) => {
     setSelectedCategory(category);
+    if (templateOptions.includes(category)) {
+      const defaults = getKelasOptionsForTemplate(category);
+      if (defaults && defaults.length > 0) {
+        setSelectedKelasOption(defaults[0]);
+      } else {
+        setSelectedKelasOption(null);
+      }
+    }
     if (category === 'Favorit') {
       setFavoritesOpen(true);
     } else {
@@ -286,12 +375,18 @@ export default function DesignDashboard() {
   };
 
   const categoryIcons = {
-    'Semua Template': <Layers className="h-4 w-4" />,
-    'Kelas A': <GraduationCap className="h-4 w-4" />,
-    'Kelas B': <GraduationCap className="h-4 w-4" />,
-    Materi: <BookCopy className="h-4 w-4" />,
+    Template: <Layers className="h-4 w-4" />,
+    Kelas: <GraduationCap className="h-4 w-4" />,
     Favorit: <Star className="h-4 w-4 " />,
   };
+
+  const headingTitle = templateOptions.includes(selectedCategory)
+    ? selectedCategory
+    : 'Taman Kanak - Kanak (TK)';
+
+  const templateButtonLabel = templateOptions.includes(selectedCategory)
+    ? selectedCategory
+    : 'Template';
 
   return (
     <>
@@ -334,7 +429,11 @@ export default function DesignDashboard() {
 
               <div className="flex items-center gap-4">
                 <div
-                  className={`relative transition-all duration-200 ${sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                  className={`relative transition-all duration-200 ${
+                    sidebarOpen
+                      ? 'opacity-0 pointer-events-none'
+                      : 'opacity-100'
+                  }`}
                   style={{ zIndex: 50 }}
                 >
                   <img
@@ -344,6 +443,7 @@ export default function DesignDashboard() {
                     alt="user"
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                   />
+
                   {dropdownOpen && !sidebarOpen && (
                     <div
                       ref={dropdownRef}
@@ -377,139 +477,240 @@ export default function DesignDashboard() {
           )}
 
           <div
-            className={`text-center pt-8  mt-10 md:mt-2 ${!isAccountRoute ? 'pt-20 md:pt-20' : ''}`}
+            className={`text-center pt-8 mt-10 md:mt-2 ${
+              !isAccountRoute ? 'pt-20 md:pt-20' : ''
+            }`}
             style={{ transition: 'padding 200ms ease' }}
           >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-4">
-              Taman Kanak - Kanak (TK)
+              {headingTitle}
             </h2>
           </div>
 
           <div className="flex flex-col items-center pt-6 pb-4 px-4 justify-center pb-6">
             <div className="relative w-full max-w-3xl px-4">
               <SearchButton
-                placeholder="Cari materi pembelajaran, aktivitas, dll..."
+                placeholder="Cari Kelas pembelajaran, aktivitas, dll..."
                 onSearch={(v) => setSearch(v)}
                 className="w-full max-w-xl mx-auto"
               />
             </div>
           </div>
 
-          {/* Category Bar */}
-          <div className="flex justify-center gap-2 md:gap-4 pb-4">
-            {categories.map((cat) => {
-              if (cat === 'Materi') {
-                return (
-                  <div
-                    key="materi"
-                    className="relative"
-                    ref={kategoriRef}
-                    onMouseEnter={
-                      typeof window !== 'undefined' && window.innerWidth >= 768
-                        ? () => {
-                            if (kategoriCloseTimeoutRef.current) {
-                              clearTimeout(kategoriCloseTimeoutRef.current);
-                              kategoriCloseTimeoutRef.current = null;
-                            }
-                            setKategoriOpen(true);
-                          }
-                        : undefined
+          {/* Category Bar - responsive: Template on top for mobile/iPad, Kelas+Favorit below */}
+          <div className="flex flex-col items-center gap-2 md:flex-row md:justify-center md:gap-4 pb-4 w-full px-4">
+            {/* Template button - full width on small, auto on md+ */}
+            <div
+              className="relative w-full md:inline-block md:w-auto"
+              ref={templateRef}
+              onMouseEnter={
+                typeof window !== 'undefined' && window.innerWidth >= 768
+                  ? () => {
+                      if (templateCloseTimeoutRef.current) {
+                        clearTimeout(templateCloseTimeoutRef.current);
+                        templateCloseTimeoutRef.current = null;
+                      }
+                      setTemplateOpen(true);
                     }
-                    onMouseLeave={
-                      typeof window !== 'undefined' && window.innerWidth >= 768
-                        ? () => {
-                            if (kategoriCloseTimeoutRef.current)
-                              clearTimeout(kategoriCloseTimeoutRef.current);
-                            kategoriCloseTimeoutRef.current = setTimeout(() => {
-                              setKategoriOpen(false);
-                              kategoriCloseTimeoutRef.current = null;
-                            }, 160);
-                          }
-                        : undefined
-                    }
-                  >
-                    <button
-                      onClick={() => setKategoriOpen((s) => !s)}
-                      className={`px-4 py-2 rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center gap-2 ${isKategoriActive ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm">
-                          {categoryIcons['Materi']}
-                        </span>
-                        <span className="text-sm">Materi</span>
-                      </span>
-                      <ChevronRight
-                        className={`ml-1 h-4 w-4 transform transition-transform duration-200 ${kategoriOpen ? 'rotate-90' : 'rotate-0'}`}
-                      />
-                    </button>
-
-                    {kategoriOpen && (
-                      <div
-                        className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-md shadow-lg z-40 overflow-hidden"
-                        onMouseEnter={() => {
-                          if (kategoriCloseTimeoutRef.current) {
-                            clearTimeout(kategoriCloseTimeoutRef.current);
-                            kategoriCloseTimeoutRef.current = null;
-                          }
-                          setKategoriOpen(true);
-                        }}
-                        onMouseLeave={() => {
-                          if (kategoriCloseTimeoutRef.current)
-                            clearTimeout(kategoriCloseTimeoutRef.current);
-                          kategoriCloseTimeoutRef.current = setTimeout(() => {
-                            setKategoriOpen(false);
-                            kategoriCloseTimeoutRef.current = null;
-                          }, 160);
-                        }}
-                      >
-                        <button
-                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() =>
-                            navigateToCategory('Seni & Kreativitas')
-                          }
-                        >
-                          Seni & Kreativitas
-                        </button>
-                        <button
-                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() => navigateToCategory('Hewan & Tumbuhan')}
-                        >
-                          Hewan & Tumbuhan
-                        </button>
-                        <button
-                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() => navigateToCategory('Huruf & Bahasa')}
-                        >
-                          Huruf & Bahasa
-                        </button>
-                        <button
-                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
-                          onClick={() =>
-                            navigateToCategory('Angka & Berhitung')
-                          }
-                        >
-                          Angka & Berhitung
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
+                  : undefined
               }
+              onMouseLeave={
+                typeof window !== 'undefined' && window.innerWidth >= 768
+                  ? () => {
+                      if (templateCloseTimeoutRef.current)
+                        clearTimeout(templateCloseTimeoutRef.current);
+                      templateCloseTimeoutRef.current = setTimeout(() => {
+                        setTemplateOpen(false);
+                        templateCloseTimeoutRef.current = null;
+                      }, 160);
+                    }
+                  : undefined
+              }
+            >
+              <button
+                onClick={() => setTemplateOpen((s) => !s)}
+                className={`w-full md:w-auto px-4 py-2 rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center gap-2 justify-center ${
+                  isTemplateActive
+                    ? 'bg-[#5122ff] text-white border-white border-2'
+                    : 'bg-white text-black'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-sm">{categoryIcons['Template']}</span>
+                  <span className="text-sm">{templateButtonLabel}</span>
+                </span>
+                <ChevronRight
+                  className={`ml-1 h-4 w-4 transform transition-transform duration-200 ${
+                    templateOpen ? 'rotate-90' : 'rotate-0'
+                  }`}
+                />
+              </button>
 
-              return (
+              {templateOpen && (
+                <div
+                  className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-40 overflow-hidden"
+                  onMouseEnter={() => {
+                    if (templateCloseTimeoutRef.current) {
+                      clearTimeout(templateCloseTimeoutRef.current);
+                      templateCloseTimeoutRef.current = null;
+                    }
+                    setTemplateOpen(true);
+                  }}
+                  onMouseLeave={() => {
+                    if (templateCloseTimeoutRef.current)
+                      clearTimeout(templateCloseTimeoutRef.current);
+                    templateCloseTimeoutRef.current = setTimeout(() => {
+                      setTemplateOpen(false);
+                      templateCloseTimeoutRef.current = null;
+                    }, 160);
+                  }}
+                >
+                  <button
+                    className="block w-full text-center px-3 py-2 text-sm font-semibold hover:bg-[#5122ff] hover:text-white"
+                    onClick={() => {
+                      navigateToCategory('Taman Kanak - Kanak (TK)');
+                      setTemplateOpen(false);
+                    }}
+                  >
+                    Taman Kanak - Kanak (TK)
+                  </button>
+                  <button
+                    className="block w-full text-center px-3 py-2 text-sm font-semibold hover:bg-[#5122ff] hover:text-white"
+                    onClick={() => {
+                      navigateToCategory('Sekolah Dasar (SD)');
+                      setTemplateOpen(false);
+                    }}
+                  >
+                    Sekolah Dasar (SD)
+                  </button>
+                  <button
+                    className="block w-full text-center px-3 py-2 text-sm font-semibold hover:bg-[#5122ff] hover:text-white"
+                    onClick={() => {
+                      navigateToCategory('Sekolah Menengah Pertama (SMP)');
+                      setTemplateOpen(false);
+                    }}
+                  >
+                    Sekolah Menengah Pertama (SMP)
+                  </button>
+                  <button
+                    className="block w-full text-center px-3 py-2 text-sm font-semibold hover:bg-[#5122ff] hover:text-white"
+                    onClick={() => {
+                      navigateToCategory('Sekolah Menengah Atas (SMA)');
+                      setTemplateOpen(false);
+                    }}
+                  >
+                    Sekolah Menengah Atas (SMA)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Sub-row for Kelas and Favorit: flex row on small (share width), auto on md */}
+            <div className="flex w-full gap-2 md:w-auto md:items-center">
+              {/* Kelas */}
+              <div
+                className="relative flex-1 md:flex-none"
+                ref={kategoriRef}
+                onMouseEnter={
+                  typeof window !== 'undefined' && window.innerWidth >= 768
+                    ? () => {
+                        if (kategoriCloseTimeoutRef.current) {
+                          clearTimeout(kategoriCloseTimeoutRef.current);
+                          kategoriCloseTimeoutRef.current = null;
+                        }
+                        setKategoriOpen(true);
+                      }
+                    : undefined
+                }
+                onMouseLeave={
+                  typeof window !== 'undefined' && window.innerWidth >= 768
+                    ? () => {
+                        if (kategoriCloseTimeoutRef.current)
+                          clearTimeout(kategoriCloseTimeoutRef.current);
+                        kategoriCloseTimeoutRef.current = setTimeout(() => {
+                          setKategoriOpen(false);
+                          kategoriCloseTimeoutRef.current = null;
+                        }, 160);
+                      }
+                    : undefined
+                }
+              >
                 <button
-                  key={cat}
-                  onClick={() => navigateToCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full font-semibold border transition-all duration-150 shadow-sm hover:bg-[#5122ff] hover:text-white ${selectedCategory === cat ? 'bg-[#5122ff] text-white border-white border-2' : 'bg-white text-black'}`}
-                  // on mobile, keep buttons compact and centered
+                  onClick={() => setKategoriOpen((s) => !s)}
+                  className={`w-full md:w-auto px-3 py-2 min-w-[6rem] rounded-full font-semibold border transition-all duration-150 shadow-sm flex items-center justify-center gap-2 ${
+                    isKelasActive
+                      ? 'bg-[#5122ff] text-white border-white border-2'
+                      : 'bg-white text-black'
+                  }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-sm">{categoryIcons[cat]}</span>
-                    <span className="text-sm">{cat}</span>
+                    <span className="text-sm">{categoryIcons['Kelas']}</span>
+                    <span className="text-sm">
+                      {selectedKelasOption ? selectedKelasOption : 'Kelas'}
+                    </span>
+                  </span>
+                  <ChevronRight
+                    className={`ml-1 h-4 w-4 transform transition-transform duration-200 ${
+                      kategoriOpen ? 'rotate-90' : 'rotate-0'
+                    }`}
+                  />
+                </button>
+
+                {kategoriOpen && (
+                  <div
+                    className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-40 overflow-hidden md:w-full"
+                    onMouseEnter={() => {
+                      if (kategoriCloseTimeoutRef.current) {
+                        clearTimeout(kategoriCloseTimeoutRef.current);
+                        kategoriCloseTimeoutRef.current = null;
+                      }
+                      setKategoriOpen(true);
+                    }}
+                    onMouseLeave={() => {
+                      if (kategoriCloseTimeoutRef.current)
+                        clearTimeout(kategoriCloseTimeoutRef.current);
+                      kategoriCloseTimeoutRef.current = setTimeout(() => {
+                        setKategoriOpen(false);
+                        kategoriCloseTimeoutRef.current = null;
+                      }, 160);
+                    }}
+                  >
+                    {/* Kelas options depend on selected template */}
+                    {getKelasOptionsForTemplate(selectedCategory).map(
+                      (opt, idx) => (
+                        <button
+                          key={idx}
+                          className="w-full text-center px-4 py-2 text-sm font-bold hover:bg-[#5122ff] hover:text-white"
+                          onClick={() => {
+                            setSelectedKelasOption(opt);
+                            setKategoriOpen(false);
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Favorit */}
+              <div className="flex-1 md:flex-none">
+                <button
+                  onClick={() => navigateToCategory('Favorit')}
+                  className={`w-full px-4 py-1.5 rounded-full font-semibold border transition-all duration-150 shadow-sm hover:bg-[#5122ff] hover:text-white ${
+                    selectedCategory === 'Favorit'
+                      ? 'bg-[#5122ff] text-white border-white border-2'
+                      : 'bg-white text-black'
+                  }`}
+                >
+                  <span className="flex items-center gap-2 justify-center">
+                    <span className="text-sm">{categoryIcons['Favorit']}</span>
+                    <span className="text-sm">Favorit</span>
                   </span>
                 </button>
-              );
-            })}
+              </div>
+            </div>
           </div>
 
           {/* Favorites Section */}
@@ -517,6 +718,7 @@ export default function DesignDashboard() {
             <main className="p-5 space-y-6">
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-white">Favorit Saya</h2>
+
                 {favoriteItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64">
                     <svg
@@ -533,20 +735,9 @@ export default function DesignDashboard() {
                         stroke-width="24"
                         stroke-linejoin="round"
                       />
-
                       {/* Centered Star */}
                       <path
-                        d="M266 185
-                            L286 231
-                            L336 236
-                            L300 271
-                            L310 321
-                            L266 297
-                            L222 321
-                            L232 271
-                            L196 236
-                            L246 231
-                            Z"
+                        d="M266 185 L286 231 L336 236 L300 271 L310 321 L266 297 L222 321 L232 271 L196 236 L246 231 Z"
                         fill="#000000"
                         stroke="#ffffff"
                         stroke-width="16"
@@ -563,7 +754,7 @@ export default function DesignDashboard() {
                         className="text-blue-400 underline"
                         onClick={(e) => {
                           e.preventDefault();
-                          setSelectedCategory('Semua Template');
+                          setSelectedCategory('Template');
                           setFavoritesOpen(false);
                         }}
                       >
@@ -597,53 +788,24 @@ export default function DesignDashboard() {
           {/* Main Content */}
           {!favoritesOpen && (
             <main className="p-5 space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
-                {(() => {
-                  // We need exactly 41 items on the page. Start from filteredTemplates
-                  const base = [...filteredTemplates];
-
-                  // If base has fewer than 41, cycle through it until length is 41
-                  const targetCount = 41;
-                  const extended = [];
-                  if (base.length === 0) {
-                    // If no filtered results, fill with seni (17).png
-                    for (let i = 0; i < targetCount; i++) {
-                      extended.push({
-                        src: '/images/materi/TK/TK A/seni (17).png',
-                        prefix: 'seni',
-                      });
-                    }
-                  } else {
-                    let idx = 0;
-                    while (extended.length < targetCount) {
-                      const item = base[idx % base.length];
-                      extended.push({ ...item });
-                      idx++;
-                    }
-                  }
-
-                  // Ensure the last 4 items (positions 38..40 zero-based) use seni (17).png
-                  for (let i = targetCount - 4; i < targetCount; i++) {
-                    extended[i] = {
-                      src: '/images/materi/TK/TK A/seni (17).png',
-                      prefix: 'seni',
-                    };
-                  }
-
-                  return extended.map((t, i) => (
-                    <div
-                      key={`${t.src}-${i}`}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      onClick={() => openModal(t)}
-                    >
+              <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+                {filteredTemplates.map((t, i) => (
+                  <div
+                    key={i}
+                    className="break-inside-avoid rounded-md shadow-sm overflow-hidden cursor-pointer"
+                    style={{ marginBottom: 12 }}
+                    onClick={() => openModal(t)}
+                  >
+                    <div className="bg-white p-1">
                       <img
                         src={t.src}
                         alt={t.src.split('/').pop()}
-                        className="w-full h-48 object-contain bg-white"
+                        className="w-full block rounded-md object-cover"
+                        style={{ display: 'block', lineHeight: 0 }}
                       />
                     </div>
-                  ));
-                })()}
+                  </div>
+                ))}
               </div>
             </main>
           )}
@@ -728,6 +890,7 @@ export default function DesignDashboard() {
                                 );
                                 let arr = [];
                                 if (raw) arr = JSON.parse(raw);
+
                                 // Cek duplikat
                                 if (!arr.some((t) => t.src === modalItem.src)) {
                                   arr.unshift({
@@ -741,10 +904,13 @@ export default function DesignDashboard() {
                                 }
                               }
                             } catch (e) {}
+
                             // Tampilkan popup
                             setShowAddPopup(true);
                             setTimeout(() => setShowAddPopup(false), 2000);
-                            // Hapus router.push('/account/design');
+
+                            // Hapus
+                            router.push('/account/design');
                           }}
                           className="px-11 py-2 rounded-md bg-[#5122ff] hover:bg-[#440db5] text-white flex items-center gap-2"
                         >
@@ -761,7 +927,11 @@ export default function DesignDashboard() {
                             toggleFavoriteForModal();
                             setFavCopied(!isFavorited);
                           }}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-md ${isFavorited ? 'bg-yellow-500 text-black' : 'bg-white text-black'}`}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                            isFavorited
+                              ? 'bg-yellow-500 text-black'
+                              : 'bg-white text-black'
+                          }`}
                         >
                           {isFavorited ? (
                             <>

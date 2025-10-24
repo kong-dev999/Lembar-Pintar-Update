@@ -208,9 +208,7 @@ function SidebarItem({ href, children, active, useAccountPrefix = false }) {
         active ? 'bg-blue-50 text-black' : 'hover:bg-gray-50 hover:text-black'
       }`}
     >
-      <span className="truncate flex items-center gap-2 px-1">
-        {children}
-      </span>
+      <span className="truncate flex items-center gap-2 px-1">{children}</span>
     </Link>
   );
 }
@@ -291,34 +289,21 @@ function SidebarMenuWithScroll({ active }) {
           defaultOpen={active === 'template'}
           isActive={active === 'template'}
         >
-          <SidebarItem
-            href="/kelas/TK"
-            useAccountPrefix={true}
-            active={router?.asPath?.startsWith('/account/kelas/TK')}
-          >
+          <SidebarItem href="/account/template">
             <i className="fa-solid fa-school px-2"></i>TK
           </SidebarItem>
-          <SidebarItem
-            href="/kelas/SD"
-            useAccountPrefix={true}
-            active={router?.asPath?.startsWith('/account/kelas/SD')}
-          >
+          <SidebarItem href="/account/template">
             <i className="fa-solid fa-school px-2"></i>SD
           </SidebarItem>
-          {/* <SidebarItem
-            href="/kelas/SMP"
-            useAccountPrefix={true}
-            active={router?.asPath?.startsWith('/account/kelas/SMP')}
-          >
-            <i className="fa-solid fa-school px-2"></i>SMP
+          <SidebarItem href="/account/template">
+            <i className="fa-solid fa-school px-2"></i>
+            SMP - <span className="italic">Coming Soon</span>
           </SidebarItem>
-          <SidebarItem
-            href="/kelas/SMA"
-            useAccountPrefix={true}
-            active={router?.asPath?.startsWith('/account/kelas/SMA')}
-          >
-            <i className="fa-solid fa-school px-2"></i>SMA
-          </SidebarItem> */}
+
+          <SidebarItem href="/account/template">
+            <i className="fa-solid fa-school px-2"></i>
+            SMA - <span className="italic">Coming Soon</span>
+          </SidebarItem>
         </Sidebaritem>
       </div>
 
